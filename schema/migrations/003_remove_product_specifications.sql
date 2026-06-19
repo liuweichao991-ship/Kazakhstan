@@ -2,6 +2,8 @@
 -- Date: 2026-04-29
 -- Description: Remove the specifications column as it's no longer needed
 
+PRAGMA foreign_keys = OFF;
+
 -- SQLite doesn't support DROP COLUMN directly, so we need to:
 -- 1. Create a new table without the specifications column
 -- 2. Copy data from old table to new table
@@ -41,3 +43,5 @@ ALTER TABLE products_new RENAME TO products;
 -- Step 5: Recreate indexes
 CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_featured ON products(is_featured);
+
+PRAGMA foreign_keys = ON;

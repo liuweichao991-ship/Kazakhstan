@@ -10,7 +10,7 @@ import {
   verifyToken,
 } from "../../utils/auth";
 
-const JWT_SECRET = "your-secret-key-change-this-in-production"; // TODO: Move to environment variable
+// JWT secret retrieved dynamically from environment variables
 
 export async function handleAdmin(request, env, corsHeaders) {
   const url = new URL(request.url);
@@ -108,7 +108,7 @@ async function adminLogin(request, env, corsHeaders) {
         role: admin.role,
         exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
       },
-      JWT_SECRET,
+      env.JWT_SECRET || "your-secret-key-change-this-in-production",
     );
 
     return new Response(
@@ -154,7 +154,7 @@ async function verifyAdminToken(request, env, corsHeaders) {
       );
     }
 
-    const payload = await verifyToken(token, JWT_SECRET);
+    const payload = await verifyToken(token, env.JWT_SECRET || "your-secret-key-change-this-in-production");
 
     if (!payload) {
       return new Response(
@@ -273,7 +273,7 @@ export async function requireAuth(request, env) {
   }
 
   const token = authHeader.substring(7);
-  const payload = await verifyToken(token, JWT_SECRET);
+  const payload = await verifyToken(token, env.JWT_SECRET || "your-secret-key-change-this-in-production");
 
   if (!payload) {
     return null;
