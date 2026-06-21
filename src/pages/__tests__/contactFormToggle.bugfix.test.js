@@ -26,10 +26,18 @@ describe("Bug Condition Exploration: Contact Form Panel Toggle", () => {
   let mockContactFormPanel;
   let clickHandlers;
 
+  let activeTimeouts = [];
+  const originalSetTimeout = global.setTimeout;
   let originalDocument;
   let originalWindow;
 
   beforeEach(() => {
+    activeTimeouts = [];
+    global.setTimeout = (cb, delay, ...args) => {
+      const id = originalSetTimeout(cb, delay, ...args);
+      activeTimeouts.push(id);
+      return id;
+    };
     originalDocument = global.document;
     originalWindow = global.window;
     // Create mock DOM elements
@@ -89,6 +97,8 @@ describe("Bug Condition Exploration: Contact Form Panel Toggle", () => {
   afterEach(() => {
     global.document = originalDocument;
     global.window = originalWindow;
+    activeTimeouts.forEach(clearTimeout);
+    global.setTimeout = originalSetTimeout;
     vi.clearAllMocks();
   });
 
@@ -128,78 +138,86 @@ describe("Bug Condition Exploration: Contact Form Panel Toggle", () => {
             timingDelay: fc.integer({ min: 0, max: 150 }), // Simulate timing variations up to 150ms (3 poll cycles)
           }),
           async (testCase) => {
-            // Reset mock state for each test case
-            mockMessageField.value = "";
-            mockContactFormPanel.classList.contains = vi.fn(() => false);
-            let panelOpened = false;
-
-            // Simulate the bug condition: toggleContactFormPanel is initially undefined
-            mockWindow.toggleContactFormPanel = undefined;
-
-            // Simulate timing: after some delay, the function becomes available
-            setTimeout(() => {
-              mockWindow.toggleContactFormPanel = () => {
-                mockContactFormPanel.classList.toggle("open");
-                mockContactFormPanel.classList.add("open");
-                panelOpened = true;
-              };
-            }, testCase.timingDelay);
-
-            // Simulate the FIXED "Send Inquiry" button click handler with retry logic
-            const simulateFixedButtonClick = () => {
-              return new Promise((resolve) => {
-                const maxAttempts = 60; // 60 attempts × 50ms = 3 seconds max wait
-                let attemptCount = 0;
-                const pollInterval = 50; // Poll every 50ms
-
-                const pollForFunction = () => {
-                  attemptCount++;
-
-                  if (typeof mockWindow.toggleContactFormPanel === "function") {
-                    // Function is available - proceed with opening the panel
-                    const messageField =
-                      mockDocument.getElementById("cfp-message");
-                    if (messageField) {
-                      messageField.value = `I am interested in: ${testCase.productName}\nProduct URL: ${testCase.productUrl}\n\n`;
-                    }
-                    mockWindow.toggleContactFormPanel();
-                    resolve();
-                  } else if (attemptCount < maxAttempts) {
-                    // Function not yet available, try again after delay
-                    setTimeout(pollForFunction, pollInterval);
-                  } else {
-                    // Timeout reached - display error notification
-                    console.error("Contact form is temporarily unavailable");
-                    resolve();
-                  }
-                };
-
-                // Start polling after a small initial delay to allow setTimeout(0) to execute
-                setTimeout(pollForFunction, 10);
-              });
+            const iterationTimeouts = [];
+            const originalTimeout = global.setTimeout;
+            global.setTimeout = (cb, delay, ...args) => {
+              const id = originalTimeout(cb, delay, ...args);
+              iterationTimeouts.push(id);
+              return id;
             };
 
-            // Execute the button click handler (simulating user clicking "Send Inquiry")
-            // Use a promise to wait for the async retry logic
-            return simulateFixedButtonClick().then(() => {
-              // **EXPECTED BEHAVIOR** (after fix with retry logic):
-              // The contact form panel SHOULD be open
-              // The message field SHOULD be pre-filled
-              // The retry logic waits for the function to become available
+            try {
+              // Reset mock state for each test case
+              mockMessageField.value = "";
+              mockContactFormPanel.classList.contains = vi.fn(() => false);
+              let panelOpened = false;
 
-              // Check that the panel is open
-              const isPanelOpen =
-                panelOpened || mockContactFormPanel.classList.contains("open");
+              // Simulate the bug condition: toggleContactFormPanel is initially undefined
+              mockWindow.toggleContactFormPanel = undefined;
 
-              // Check that the message field is pre-filled
-              const isMessagePrefilled =
-                mockMessageField.value.includes(testCase.productName) &&
-                mockMessageField.value.includes(testCase.productUrl);
+              // Simulate timing: after some delay, the function becomes available
+              global.setTimeout(() => {
+                mockWindow.toggleContactFormPanel = () => {
+                  mockContactFormPanel.classList.toggle("open");
+                  mockContactFormPanel.classList.add("open");
+                  panelOpened = true;
+                };
+              }, testCase.timingDelay);
 
-              // Return true only if BOTH conditions are met (expected behavior)
-              // With the fix, this should return true because retry logic waits for the function
-              return isPanelOpen && isMessagePrefilled;
-            });
+              // Simulate the FIXED "Send Inquiry" button click handler with retry logic
+              const simulateFixedButtonClick = () => {
+                return new Promise((resolve) => {
+                  const maxAttempts = 60; // 60 attempts × 50ms = 3 seconds max wait
+                  let attemptCount = 0;
+                  const pollInterval = 50; // Poll every 50ms
+
+                  const pollForFunction = () => {
+                    attemptCount++;
+
+                    if (typeof mockWindow.toggleContactFormPanel === "function") {
+                      // Function is available - proceed with opening the panel
+                      const messageField =
+                        mockDocument.getElementById("cfp-message");
+                      if (messageField) {
+                        messageField.value = `I am interested in: ${testCase.productName}\nProduct URL: ${testCase.productUrl}\n\n`;
+                      }
+                      mockWindow.toggleContactFormPanel();
+                      resolve();
+                    } else if (attemptCount < maxAttempts) {
+                      // Function not yet available, try again after delay
+                      global.setTimeout(pollForFunction, pollInterval);
+                    } else {
+                      // Timeout reached - display error notification
+                      console.error("Contact form is temporarily unavailable");
+                      resolve();
+                    }
+                  };
+
+                  // Start polling after a small initial delay to allow setTimeout(0) to execute
+                  global.setTimeout(pollForFunction, 10);
+                });
+              };
+
+              // Execute the button click handler (simulating user clicking "Send Inquiry")
+              // Use a promise to wait for the async retry logic
+              const res = await simulateFixedButtonClick().then(() => {
+                // Check that the panel is open
+                const isPanelOpen =
+                  panelOpened || mockContactFormPanel.classList.contains("open");
+
+                // Check that the message field is pre-filled
+                const isMessagePrefilled =
+                  mockMessageField.value.includes(testCase.productName) &&
+                  mockMessageField.value.includes(testCase.productUrl);
+
+                // Return true only if BOTH conditions are met (expected behavior)
+                return isPanelOpen && isMessagePrefilled;
+              });
+              return res;
+            } finally {
+              iterationTimeouts.forEach(clearTimeout);
+              global.setTimeout = originalTimeout;
+            }
           },
         ),
         { numRuns: 100 },

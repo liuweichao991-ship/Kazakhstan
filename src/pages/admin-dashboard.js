@@ -898,9 +898,14 @@ export async function adminDashboard(env) {
 
         <div class="form-group">
           <label class="form-label">Gallery Images / Videos</label>
-          <div class="upload-btn-wrapper">
-            <button type="button" class="btn-upload">Add to Gallery</button>
-            <input type="file" id="gallery-upload" accept="image/*,video/*" onchange="handleGalleryUpload(event)">
+          <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+            <div class="upload-btn-wrapper">
+              <button type="button" class="btn-upload" style="white-space: nowrap;">Upload Media</button>
+              <input type="file" id="gallery-upload" accept="image/*,video/*" onchange="handleGalleryUpload(event)">
+            </div>
+            <span style="color: var(--text-light); font-size: 0.85rem;">or</span>
+            <input type="url" id="gallery-url-input" class="form-input" style="flex: 1; min-width: 200px; margin: 0;" placeholder="Enter image or video URL...">
+            <button type="button" onclick="handleAddGalleryUrl()" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem; white-space: nowrap;">Add URL</button>
           </div>
           <div id="gallery-upload-status" style="display: none; color: var(--text-light); font-size: 0.85rem; margin-top: 0.5rem;">Uploading...</div>
           <div id="gallery-preview" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;"></div>
@@ -1765,9 +1770,28 @@ export async function adminDashboard(env) {
       const container = document.getElementById('gallery-preview');
       const hiddenInput = document.getElementById('product-gallery-images');
       container.innerHTML = '';
-      hiddenInput.value = JSON.stringify(urls || []);
-      (urls || []).forEach(url => addGalleryItem(url, url.match(/\.(mp4|webm|ogg)/i)));
+      hiddenInput.value = '[]';
+      (urls || []).forEach(url => addGalleryItem(url, !!url.match(/\.(mp4|webm|ogg)/i)));
     }
+
+    window.handleAddGalleryUrl = function() {
+      const urlInput = document.getElementById('gallery-url-input');
+      if (!urlInput) return;
+      const url = urlInput.value.trim();
+      if (!url) {
+        showNotification('Please enter a URL', 'error');
+        return;
+      }
+      try {
+        new URL(url);
+      } catch (e) {
+        showNotification('Please enter a valid URL (including http/https)', 'error');
+        return;
+      }
+      addGalleryItem(url, !!url.match(/\.(mp4|webm|ogg|mov)/i));
+      urlInput.value = '';
+      showNotification('Added to gallery', 'success');
+    };
 
     window.handleImageUpload = async function(event) {
       const file = event.target.files[0];
@@ -1875,6 +1899,8 @@ export async function adminDashboard(env) {
       document.getElementById('product-id').value = '';
       document.getElementById('image-preview').innerHTML = '';
       document.getElementById('image-upload').value = '';
+      const urlInput = document.getElementById('gallery-url-input');
+      if (urlInput) urlInput.value = '';
       document.getElementById('gallery-preview').innerHTML = '';
       document.getElementById('product-gallery-images').value = '[]';
     };
