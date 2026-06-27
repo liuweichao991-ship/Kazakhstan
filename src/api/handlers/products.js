@@ -181,6 +181,7 @@ async function createProduct(request, env, corsHeaders) {
       image_url,
       gallery_images,
       colors,
+      sizes,
       category_id,
       price,
       quantity,
@@ -203,11 +204,15 @@ async function createProduct(request, env, corsHeaders) {
       ? JSON.stringify(colors)
       : "[]";
 
+    const sizesJson = Array.isArray(sizes)
+      ? JSON.stringify(sizes)
+      : "[]";
+
     const result = await env.DB.prepare(
       `INSERT INTO products (
         name, description, detailed_description, 
-        image_url, gallery_images, colors, category_id, price, quantity, is_featured, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        image_url, gallery_images, colors, sizes, category_id, price, quantity, is_featured, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         name,
@@ -216,6 +221,7 @@ async function createProduct(request, env, corsHeaders) {
         image_url || null,
         galleryJson,
         colorsJson,
+        sizesJson,
         category_id !== "" && category_id !== null && category_id !== undefined
           ? parseInt(category_id)
           : null,
@@ -285,6 +291,7 @@ async function updateProduct(request, env, productId, corsHeaders) {
       image_url,
       gallery_images,
       colors,
+      sizes,
       category_id,
       price,
       quantity,
@@ -305,6 +312,10 @@ async function updateProduct(request, env, productId, corsHeaders) {
 
     const colorsJson = Array.isArray(colors)
       ? JSON.stringify(colors)
+      : "[]";
+
+    const sizesJson = Array.isArray(sizes)
+      ? JSON.stringify(sizes)
       : "[]";
 
     // Check if name changed to update SEO slug and create redirects
@@ -331,6 +342,7 @@ async function updateProduct(request, env, productId, corsHeaders) {
         image_url = ?,
         gallery_images = ?,
         colors = ?,
+        sizes = ?,
         category_id = ?,
         price = ?,
         quantity = ?,
@@ -346,6 +358,7 @@ async function updateProduct(request, env, productId, corsHeaders) {
         image_url || null,
         galleryJson,
         colorsJson,
+        sizesJson,
         category_id !== "" && category_id !== null && category_id !== undefined
           ? parseInt(category_id)
           : null,

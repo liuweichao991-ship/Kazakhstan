@@ -920,6 +920,13 @@ export async function adminDashboard(env) {
         </div>
 
         <div class="form-group">
+          <label class="form-label">Available Sizes</label>
+          <div id="product-sizes-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 0.375rem; max-height: 120px; overflow-y: auto; background: #fff;">
+            <!-- Size options will be populated dynamically -->
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-checkbox">
             <input type="checkbox" id="product-is-featured" name="is_featured">
             <span>Featured Product</span>
@@ -1186,6 +1193,21 @@ export async function adminDashboard(env) {
             <input type="checkbox" name="colors" value="\${color}" onchange="toggleColorSwatch(this)" style="width: 15px; height: 15px; cursor: pointer;">
             <span class="color-swatch" style="display: none; width: 12px; height: 12px; border-radius: 50%; background-color: \${hex}; \${borderStyle}"></span>
             <span style="font-weight: 500;">\${color}</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    const PREDEFINED_SIZES = ["S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
+
+    function renderSizesForm() {
+      const container = document.getElementById('product-sizes-container');
+      if (!container) return;
+      container.innerHTML = PREDEFINED_SIZES.map(size => {
+        return `
+          <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; font-size: 0.85rem; user-select: none; background: #f9fafb;">
+            <input type="checkbox" name="sizes" value="\${size}" style="width: 15px; height: 15px; cursor: pointer;">
+            <span style="font-weight: 500;">\${size}</span>
           </label>
         `;
       }).join('');
@@ -1956,6 +1978,14 @@ export async function adminDashboard(env) {
             }
           });
 
+          // Populate sizes checkboxes
+          let productSizes = [];
+          try { productSizes = JSON.parse(product.sizes || '[]'); } catch(e) {}
+          const sizeCheckboxes = document.querySelectorAll('input[name="sizes"]');
+          sizeCheckboxes.forEach(cb => {
+            cb.checked = productSizes.includes(cb.value);
+          });
+
           // Show image preview if exists
           const preview = document.getElementById('image-preview');
           if (product.image_url) {
@@ -2000,6 +2030,11 @@ export async function adminDashboard(env) {
           swatch.style.display = 'none';
         }
       });
+
+      const sizeCheckboxes = document.querySelectorAll('input[name="sizes"]');
+      sizeCheckboxes.forEach(cb => {
+        cb.checked = false;
+      });
     };
 
     window.openAddProductModal = function() {
@@ -2015,6 +2050,11 @@ export async function adminDashboard(env) {
         if (swatch && swatch.classList.contains('color-swatch')) {
           swatch.style.display = 'none';
         }
+      });
+
+      const sizeCheckboxes = document.querySelectorAll('input[name="sizes"]');
+      sizeCheckboxes.forEach(cb => {
+        cb.checked = false;
       });
 
       // Update modal title
@@ -2039,6 +2079,7 @@ export async function adminDashboard(env) {
         image_url: document.getElementById('product-image-url').value,
         gallery_images: (() => { try { return JSON.parse(document.getElementById('product-gallery-images').value || '[]'); } catch(e) { return []; } })(),
         colors: Array.from(document.querySelectorAll('input[name="colors"]:checked')).map(cb => cb.value),
+        sizes: Array.from(document.querySelectorAll('input[name="sizes"]:checked')).map(cb => cb.value),
         price: priceVal !== '' ? parseFloat(priceVal) : null,
         quantity: quantityVal !== '' ? parseInt(quantityVal) : null,
         is_featured: document.getElementById('product-is-featured').checked,
@@ -2564,6 +2605,7 @@ Date: \${new Date(inquiry.created_at).toLocaleString()}
     // Initialize dashboard
     loadDashboardStats();
     renderColorsForm();
+    renderSizesForm();
   </script>
 </body>
 </html>`;

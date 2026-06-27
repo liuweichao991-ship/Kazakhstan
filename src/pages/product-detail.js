@@ -290,6 +290,23 @@ export async function productDetailPage(request, env) {
             colorsHtml += '</div></div>';
           }
 
+          // Sizes section
+          var sizesHtml = '';
+          var productSizes = [];
+          try { productSizes = JSON.parse(product.sizes || '[]'); } catch(e) {}
+          if (Array.isArray(productSizes) && productSizes.length > 0) {
+            sizesHtml += '<div style="margin-bottom:1.5rem;">'
+              + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Available Sizes</div>'
+              + '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+            
+            productSizes.forEach(function(size) {
+              sizesHtml += '<div style="padding:0.25rem 0.75rem;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:0.25rem;font-size:0.85rem;font-weight:600;color:var(--text-dark);min-width:32px;text-align:center;">'
+                + size
+                + '</div>';
+            });
+            sizesHtml += '</div></div>';
+          }
+
           document.getElementById('product-detail').innerHTML =
             '<div style="margin-bottom:2rem;">'
               + '<a href="/" style="color:var(--text-light);text-decoration:none;">Home</a>'
@@ -309,6 +326,7 @@ export async function productDetailPage(request, env) {
                 + '<p style="color:var(--text-light);font-size:1.1rem;line-height:1.8;margin-bottom:1.5rem;">' + (product.description || 'No description available') + '</p>'
                 + priceSectionHtml
                 + colorsHtml
+                + sizesHtml
                 + '<button id="send-inquiry-btn" class="btn btn-primary" style="font-size:1.1rem;padding:1rem 2rem;">Send Inquiry</button>'
               + '</div>'
             + '</div>'
