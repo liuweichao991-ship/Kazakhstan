@@ -333,23 +333,13 @@ export function createLayout(
       visibility: visible;
     }
     .quote-item q {
-      quotes: "“" "”" "‘" "’";
+      quotes: none;
     }
     .quote-item q::before {
-      content: open-quote;
-      font-size: 1.5rem;
-      line-height: 0.1;
-      margin-right: 0.25rem;
-      vertical-align: -0.4rem;
-      color: var(--accent-color);
+      content: none;
     }
     .quote-item q::after {
-      content: close-quote;
-      font-size: 1.5rem;
-      line-height: 0.1;
-      margin-left: 0.1rem;
-      vertical-align: -0.4rem;
-      color: var(--accent-color);
+      content: none;
     }
 
     .footer-bottom {
