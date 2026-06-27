@@ -913,6 +913,13 @@ export async function adminDashboard(env) {
         </div>
 
         <div class="form-group">
+          <label class="form-label">Available Colors</label>
+          <div id="product-colors-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 0.375rem; max-height: 180px; overflow-y: auto; background: #fff;">
+            <!-- Color options will be populated dynamically -->
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-checkbox">
             <input type="checkbox" id="product-is-featured" name="is_featured">
             <span>Featured Product</span>
@@ -1115,6 +1122,74 @@ export async function adminDashboard(env) {
      * Admin Dashboard JavaScript
      * Handles all admin dashboard functionality
      */
+
+    // Predefined colors list
+    const PREDEFINED_COLORS = [
+      "Black", "Royal Blue", "White", "Navy Blue", "Medium Gray", "Caramel",
+      "Emerald Green", "Mud Gray", "Dark Gray", "Dark Green", "Coffee", "Rose Red",
+      "Off-white", "Denim Blue", "Light Brown", "Bottle Green", "Coffee Brown",
+      "Light Khaki", "Jay Blue", "Heather Gray", "Deep Green", "Gray", "Green",
+      "Apricot", "Bright Green", "Navy", "Yellow Khaki", "Burgundy", "Medium Blue"
+    ];
+
+    function getColorHex(color) {
+      const map = {
+        "black": "#000000",
+        "royal blue": "#4169e1",
+        "white": "#ffffff",
+        "navy blue": "#000080",
+        "medium gray": "#808080",
+        "caramel": "#af6e2d",
+        "emerald green": "#50c878",
+        "mud gray": "#796d62",
+        "dark gray": "#333333",
+        "dark green": "#013220",
+        "coffee": "#6f4e37",
+        "rose red": "#c21e56",
+        "off-white": "#faf9f6",
+        "denim blue": "#3b5f8f",
+        "light brown": "#b5651d",
+        "bottle green": "#006a4e",
+        "coffee brown": "#4a3b32",
+        "light khaki": "#f0e68c",
+        "jay blue": "#2874a6",
+        "heather gray": "#b2beb5",
+        "deep green": "#05472a",
+        "gray": "#9ca3af",
+        "green": "#10b981",
+        "apricot": "#fbceb1",
+        "bright green": "#4ade80",
+        "navy": "#00003b",
+        "yellow khaki": "#c3b091",
+        "burgundy": "#800020",
+        "medium blue": "#3b82f6"
+      };
+      return map[color.toLowerCase().trim()] || "#cccccc";
+    }
+
+    window.toggleColorSwatch = function(checkbox) {
+      const swatch = checkbox.nextElementSibling;
+      if (swatch && swatch.classList.contains('color-swatch')) {
+        swatch.style.display = checkbox.checked ? 'inline-block' : 'none';
+      }
+    };
+
+    function renderColorsForm() {
+      const container = document.getElementById('product-colors-container');
+      if (!container) return;
+      container.innerHTML = PREDEFINED_COLORS.map(color => {
+        const hex = getColorHex(color);
+        const isWhite = hex.toLowerCase() === '#ffffff' || hex.toLowerCase() === '#faf9f6';
+        const borderStyle = isWhite ? 'border: 1px solid #d1d5db;' : 'border: 1px solid transparent;';
+        return `
+          <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; font-size: 0.85rem; user-select: none; background: #f9fafb;">
+            <input type="checkbox" name="colors" value="\${color}" onchange="toggleColorSwatch(this)" style="width: 15px; height: 15px; cursor: pointer;">
+            <span class="color-swatch" style="display: none; width: 12px; height: 12px; border-radius: 50%; background-color: \${hex}; \${borderStyle}"></span>
+            <span style="font-weight: 500;">\${color}</span>
+          </label>
+        `;
+      }).join('');
+    }
 
     // Check authentication
     const token = localStorage.getItem('admin_token');
@@ -1868,6 +1943,19 @@ export async function adminDashboard(env) {
           document.getElementById('product-is-featured').checked = !!product.is_featured;
           document.getElementById('product-is-active').checked = !!product.is_active;
 
+          // Populate colors checkboxes
+          let productColors = [];
+          try { productColors = JSON.parse(product.colors || '[]'); } catch(e) {}
+          const colorCheckboxes = document.querySelectorAll('input[name="colors"]');
+          colorCheckboxes.forEach(cb => {
+            const isChecked = productColors.includes(cb.value);
+            cb.checked = isChecked;
+            const swatch = cb.nextElementSibling;
+            if (swatch && swatch.classList.contains('color-swatch')) {
+              swatch.style.display = isChecked ? 'inline-block' : 'none';
+            }
+          });
+
           // Show image preview if exists
           const preview = document.getElementById('image-preview');
           if (product.image_url) {
@@ -1903,6 +1991,15 @@ export async function adminDashboard(env) {
       if (urlInput) urlInput.value = '';
       document.getElementById('gallery-preview').innerHTML = '';
       document.getElementById('product-gallery-images').value = '[]';
+      
+      const colorCheckboxes = document.querySelectorAll('input[name="colors"]');
+      colorCheckboxes.forEach(cb => {
+        cb.checked = false;
+        const swatch = cb.nextElementSibling;
+        if (swatch && swatch.classList.contains('color-swatch')) {
+          swatch.style.display = 'none';
+        }
+      });
     };
 
     window.openAddProductModal = function() {
@@ -1910,6 +2007,15 @@ export async function adminDashboard(env) {
       document.getElementById('product-form').reset();
       document.getElementById('product-id').value = '';
       document.getElementById('product-is-active').checked = true;
+
+      const colorCheckboxes = document.querySelectorAll('input[name="colors"]');
+      colorCheckboxes.forEach(cb => {
+        cb.checked = false;
+        const swatch = cb.nextElementSibling;
+        if (swatch && swatch.classList.contains('color-swatch')) {
+          swatch.style.display = 'none';
+        }
+      });
 
       // Update modal title
       document.getElementById('modal-title').textContent = 'Add New Product';
@@ -1932,6 +2038,7 @@ export async function adminDashboard(env) {
         detailed_description: document.getElementById('product-detailed-description').value,
         image_url: document.getElementById('product-image-url').value,
         gallery_images: (() => { try { return JSON.parse(document.getElementById('product-gallery-images').value || '[]'); } catch(e) { return []; } })(),
+        colors: Array.from(document.querySelectorAll('input[name="colors"]:checked')).map(cb => cb.value),
         price: priceVal !== '' ? parseFloat(priceVal) : null,
         quantity: quantityVal !== '' ? parseInt(quantityVal) : null,
         is_featured: document.getElementById('product-is-featured').checked,
@@ -2456,6 +2563,7 @@ Date: \${new Date(inquiry.created_at).toLocaleString()}
 
     // Initialize dashboard
     loadDashboardStats();
+    renderColorsForm();
   </script>
 </body>
 </html>`;

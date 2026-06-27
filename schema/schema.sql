@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS products (
   specifications TEXT,
   image_url TEXT,
   gallery_images TEXT, -- JSON array of image URLs
+  colors TEXT DEFAULT '[]', -- JSON array of color names
   category_id INTEGER,
   price REAL DEFAULT NULL,
   quantity INTEGER DEFAULT NULL,

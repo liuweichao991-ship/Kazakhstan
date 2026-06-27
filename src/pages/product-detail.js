@@ -146,6 +146,41 @@ export async function productDetailPage(request, env) {
     <script>
       const productId = "${product ? product.id : key}";
 
+      function getColorHex(color) {
+        const map = {
+          "black": "#000000",
+          "royal blue": "#4169e1",
+          "white": "#ffffff",
+          "navy blue": "#000080",
+          "medium gray": "#808080",
+          "caramel": "#af6e2d",
+          "emerald green": "#50c878",
+          "mud gray": "#796d62",
+          "dark gray": "#333333",
+          "dark green": "#013220",
+          "coffee": "#6f4e37",
+          "rose red": "#c21e56",
+          "off-white": "#faf9f6",
+          "denim blue": "#3b5f8f",
+          "light brown": "#b5651d",
+          "bottle green": "#006a4e",
+          "coffee brown": "#4a3b32",
+          "light khaki": "#f0e68c",
+          "jay blue": "#2874a6",
+          "heather gray": "#b2beb5",
+          "deep green": "#05472a",
+          "gray": "#9ca3af",
+          "green": "#10b981",
+          "apricot": "#fbceb1",
+          "bright green": "#4ade80",
+          "navy": "#00003b",
+          "yellow khaki": "#c3b091",
+          "burgundy": "#800020",
+          "medium blue": "#3b82f6"
+        };
+        return map[color.toLowerCase().trim()] || "#cccccc";
+      }
+
       function renderMarkdown(text) {
         if (!text || text.trim() === '') return null;
         try {
@@ -234,6 +269,27 @@ export async function productDetailPage(request, env) {
             ? '<div style="display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">' + priceHtml + '</div>'
             : '';
 
+          // Colors section
+          var colorsHtml = '';
+          var productColors = [];
+          try { productColors = JSON.parse(product.colors || '[]'); } catch(e) {}
+          if (Array.isArray(productColors) && productColors.length > 0) {
+            colorsHtml += '<div style="margin-bottom:1.5rem;">'
+              + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Available Colors</div>'
+              + '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+            
+            productColors.forEach(function(color) {
+              var hex = getColorHex(color);
+              var isWhite = hex.toLowerCase() === '#ffffff' || hex.toLowerCase() === '#faf9f6';
+              var borderStyle = isWhite ? 'border: 1px solid #d1d5db;' : 'border: 1px solid transparent;';
+              colorsHtml += '<div style="display:flex;align-items:center;gap:0.35rem;padding:0.25rem 0.5rem;background:#f3f4f6;border-radius:0.25rem;font-size:0.85rem;font-weight:500;color:var(--text-dark);">'
+                + '<span style="width:12px;height:12px;border-radius:50%;background-color:' + hex + ';' + borderStyle + '"></span>'
+                + '<span>' + color + '</span>'
+                + '</div>';
+            });
+            colorsHtml += '</div></div>';
+          }
+
           document.getElementById('product-detail').innerHTML =
             '<div style="margin-bottom:2rem;">'
               + '<a href="/" style="color:var(--text-light);text-decoration:none;">Home</a>'
@@ -252,6 +308,7 @@ export async function productDetailPage(request, env) {
                 + '<h1 style="font-size:2rem;margin-bottom:1rem;color:var(--text-dark);">' + product.name + '</h1>'
                 + '<p style="color:var(--text-light);font-size:1.1rem;line-height:1.8;margin-bottom:1.5rem;">' + (product.description || 'No description available') + '</p>'
                 + priceSectionHtml
+                + colorsHtml
                 + '<button id="send-inquiry-btn" class="btn btn-primary" style="font-size:1.1rem;padding:1rem 2rem;">Send Inquiry</button>'
               + '</div>'
             + '</div>'

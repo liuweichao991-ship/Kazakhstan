@@ -180,6 +180,7 @@ async function createProduct(request, env, corsHeaders) {
       detailed_description,
       image_url,
       gallery_images,
+      colors,
       category_id,
       price,
       quantity,
@@ -198,11 +199,15 @@ async function createProduct(request, env, corsHeaders) {
       ? JSON.stringify(gallery_images)
       : "[]";
 
+    const colorsJson = Array.isArray(colors)
+      ? JSON.stringify(colors)
+      : "[]";
+
     const result = await env.DB.prepare(
       `INSERT INTO products (
         name, description, detailed_description, 
-        image_url, gallery_images, category_id, price, quantity, is_featured, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        image_url, gallery_images, colors, category_id, price, quantity, is_featured, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         name,
@@ -210,6 +215,7 @@ async function createProduct(request, env, corsHeaders) {
         detailed_description || null,
         image_url || null,
         galleryJson,
+        colorsJson,
         category_id !== "" && category_id !== null && category_id !== undefined
           ? parseInt(category_id)
           : null,
@@ -278,6 +284,7 @@ async function updateProduct(request, env, productId, corsHeaders) {
       detailed_description,
       image_url,
       gallery_images,
+      colors,
       category_id,
       price,
       quantity,
@@ -294,6 +301,10 @@ async function updateProduct(request, env, productId, corsHeaders) {
 
     const galleryJson = Array.isArray(gallery_images)
       ? JSON.stringify(gallery_images)
+      : "[]";
+
+    const colorsJson = Array.isArray(colors)
+      ? JSON.stringify(colors)
       : "[]";
 
     // Check if name changed to update SEO slug and create redirects
@@ -319,6 +330,7 @@ async function updateProduct(request, env, productId, corsHeaders) {
         detailed_description = ?,
         image_url = ?,
         gallery_images = ?,
+        colors = ?,
         category_id = ?,
         price = ?,
         quantity = ?,
@@ -333,6 +345,7 @@ async function updateProduct(request, env, productId, corsHeaders) {
         detailed_description || null,
         image_url || null,
         galleryJson,
+        colorsJson,
         category_id !== "" && category_id !== null && category_id !== undefined
           ? parseInt(category_id)
           : null,
