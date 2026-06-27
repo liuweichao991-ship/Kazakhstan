@@ -212,7 +212,7 @@ async function createProduct(request, env, corsHeaders) {
       `INSERT INTO products (
         name, description, detailed_description, 
         image_url, gallery_images, colors, sizes, category_id, price, quantity, is_featured, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         name,
