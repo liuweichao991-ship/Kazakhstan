@@ -72,7 +72,7 @@ npm install
 
 ```bash
 # Create database
-wrangler d1 create b2b_database
+wrangler d1 create garment_database
 
 # Note the database_id from output and update wrangler.toml
 ```
@@ -84,7 +84,7 @@ Edit `wrangler.toml` and replace `database_id` with the actual ID from step 3:
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "b2b_database"
+database_name = "garment_database"
 database_id = "your-database-id"  # Replace this
 ```
 
@@ -126,7 +126,7 @@ preview_id = "your-preview-kv-namespace-id"  # Optional, for local dev
 
 ```bash
 # Execute database schema
-wrangler d1 execute b2b_database --file=./schema/schema.sql
+wrangler d1 execute garment_database --file=./schema/schema.sql
 ```
 
 This will create:
@@ -197,7 +197,7 @@ WHERE username = 'admin';
 
 Execute via Wrangler CLI:
 ```bash
-wrangler d1 execute b2b_database --command="UPDATE admins SET password_hash = 'your-hash' WHERE username = 'admin';"
+wrangler d1 execute garment_database --command="UPDATE admins SET password_hash = 'your-hash' WHERE username = 'admin';"
 ```
 
 Or via Cloudflare Dashboard Console.

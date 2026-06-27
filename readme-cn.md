@@ -57,7 +57,7 @@ npm install
 
 ```bash
 # 创建数据库
-wrangler d1 create b2b_database
+wrangler d1 create garment_database
 
 # 记录输出的 database_id，并更新到 wrangler.toml 文件中
 ```
@@ -69,7 +69,7 @@ wrangler d1 create b2b_database
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "b2b_database"
+database_name = "garment_database"
 database_id = "your-database-id"  # 替换这里
 ```
 
@@ -111,7 +111,7 @@ preview_id = "your-preview-kv-namespace-id"  # 可选，用于本地开发
 
 ```bash
 # 执行数据库 schema
-wrangler d1 execute b2b_database --file=./schema/schema.sql
+wrangler d1 execute garment_database --file=./schema/schema.sql
 ```
 
 这将会创建：
@@ -182,7 +182,7 @@ WHERE username = 'admin';
 
 通过 Wrangler CLI 执行：
 ```bash
-wrangler d1 execute b2b_database --command="UPDATE admins SET password_hash = 'your-hash' WHERE username = 'admin';"
+wrangler d1 execute garment_database --command="UPDATE admins SET password_hash = 'your-hash' WHERE username = 'admin';"
 ```
 
 或通过 Cloudflare Dashboard 控制台执行。
