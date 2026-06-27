@@ -1188,13 +1188,13 @@ export async function adminDashboard(env) {
         const hex = getColorHex(color);
         const isWhite = hex.toLowerCase() === '#ffffff' || hex.toLowerCase() === '#faf9f6';
         const borderStyle = isWhite ? 'border: 1px solid #d1d5db;' : 'border: 1px solid transparent;';
-        return `
+        return \`
           <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; font-size: 0.85rem; user-select: none; background: #f9fafb;">
             <input type="checkbox" name="colors" value="\${color}" onchange="toggleColorSwatch(this)" style="width: 15px; height: 15px; cursor: pointer;">
             <span class="color-swatch" style="display: none; width: 12px; height: 12px; border-radius: 50%; background-color: \${hex}; \${borderStyle}"></span>
             <span style="font-weight: 500;">\${color}</span>
           </label>
-        `;
+        \`;
       }).join('');
     }
 
@@ -1204,12 +1204,12 @@ export async function adminDashboard(env) {
       const container = document.getElementById('product-sizes-container');
       if (!container) return;
       container.innerHTML = PREDEFINED_SIZES.map(size => {
-        return `
+        return \`
           <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; font-size: 0.85rem; user-select: none; background: #f9fafb;">
             <input type="checkbox" name="sizes" value="\${size}" style="width: 15px; height: 15px; cursor: pointer;">
             <span style="font-weight: 500;">\${size}</span>
           </label>
-        `;
+        \`;
       }).join('');
     }
 
