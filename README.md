@@ -7,6 +7,7 @@ A professional B2B product exhibition website built on Cloudflare Workers with D
 ## Features
 
 ### ✅ Frontend Website
+
 1. **Home Page** - Company introduction and featured products showcase
 2. **Products Page** - Product listing with category filtering and search
 3. **Product Detail Page** - Detailed product information and inquiry form
@@ -15,6 +16,7 @@ A professional B2B product exhibition website built on Cloudflare Workers with D
 6. **Responsive Design** - Optimized for mobile, tablet, and desktop devices
 
 ### ✅ Admin Backend System
+
 1. **Role-Based Access Control**
    - **Super Admin** - Full CRUD permissions (create, read, update, delete)
    - **Regular Admin** - Read-only access (view only)
@@ -25,6 +27,7 @@ A professional B2B product exhibition website built on Cloudflare Workers with D
 6. **Website Settings** - Configure site information, contact details, and social media links (Super Admin only)
 
 ### ✅ Backend API
+
 1. **Product API** - Complete CRUD operations (GET/POST/PUT/DELETE)
 2. **Inquiry API** - Submit inquiries, query, and status updates
 3. **Admin API** - Login authentication, token verification, role management
@@ -32,6 +35,7 @@ A professional B2B product exhibition website built on Cloudflare Workers with D
 5. **Settings API** - Manage website configuration via KV storage
 
 ### ✅ Database Design
+
 - **Products Table** - Product information storage
 - **Inquiries Table** - Customer inquiry records
 - **Admins Table** - Admin accounts with role-based permissions
@@ -52,6 +56,7 @@ A professional B2B product exhibition website built on Cloudflare Workers with D
 Before you begin, ensure Node.js is installed on your system (version 16 or higher recommended).
 
 **Download and Install:**
+
 - Visit [Node.js official website](https://nodejs.org/)
 - Download the LTS (Long Term Support) version
 - Run the installer and follow the installation wizard
@@ -130,10 +135,11 @@ wrangler d1 execute garment_database --file=./schema/schema.sql
 ```
 
 This will create:
+
 - Database tables (products, inquiries, admins)
 - Two default admin accounts:
-  - **Super Admin**: username `admin123`, password `admin123`
-  - **Regular Admin**: username `staff`, password `staff123`
+  - **Super Admin**: username `admin123`, password `chen123`
+  - **Regular Admin**: username `staff`, password `chen1256`
 - Sample products for testing
 
 ### 8. Local Development
@@ -152,18 +158,16 @@ Visit http://localhost:8787 to test the website.
 npm run deploy
 ```
 
-
-
 ## Admin Account Management
 
 ### Default Credentials
 
 After initial setup, you'll have two admin accounts:
 
-| Username | Password | Role | Permissions |
-|----------|----------|------|-------------|
-| admin123 | admin123 | Super Admin | Full CRUD access |
-| staff    | staff123 | Regular Admin | Read-only access |
+| Username | Password | Role          | Permissions      |
+| -------- | -------- | ------------- | ---------------- |
+| admin123 | chen123  | Super Admin   | Full CRUD access |
+| staff    | chen1256 | Regular Admin | Read-only access |
 
 ### Security Best Practices
 
@@ -177,13 +181,13 @@ Use browser console to generate a new password hash:
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // Generate hash for your new password
-hashPassword('your-new-secure-password').then(hash => console.log(hash));
+hashPassword("your-new-secure-password").then((hash) => console.log(hash));
 ```
 
 #### 2. Update Password in Database
@@ -196,6 +200,7 @@ WHERE username = 'admin';
 ```
 
 Execute via Wrangler CLI:
+
 ```bash
 wrangler d1 execute garment_database --command="UPDATE admins SET password_hash = 'your-hash' WHERE username = 'admin';"
 ```
@@ -205,6 +210,7 @@ Or via Cloudflare Dashboard Console.
 #### 3. Configure JWT Secret
 
 **Option A**: Using wrangler.toml (not recommended for production)
+
 ```toml
 [vars]
 JWT_SECRET = "your-very-secure-secret-key-change-this"
@@ -212,6 +218,7 @@ ENVIRONMENT = "production"
 ```
 
 **Option B**: Using Cloudflare Dashboard Secrets (recommended)
+
 ```bash
 wrangler secret put JWT_SECRET
 # Enter your secret when prompted
@@ -339,6 +346,7 @@ cf_b2b/
 ## Support
 
 For issues and questions:
+
 1. Check Wrangler CLI version: `wrangler --version`
 2. Verify D1 database initialization
 3. Review wrangler.toml configuration

@@ -231,82 +231,139 @@ export async function productDetailPage(request, env) {
             return;
           }
 
-          // Build media list
+          // Variant state
+          const variants = Array.isArray(product.variants) ? product.variants : [];
+          const colorImages = Array.isArray(product.color_images) ? product.color_images : [];
+          const hasVariants = variants.length > 0;
+
+          // variantMap[color][size] = quantity
+          const variantMap = {};
+          variants.forEach(function(v) {
+            if (!variantMap[v.color_name]) variantMap[v.color_name] = {};
+            variantMap[v.color_name][v.size_name] = v.quantity;
+          });
+
+          // colorImageMap[color] = { primary, gallery[] }
+          const colorImageMap = {};
+          colorImages.forEach(function(ci) {
+            var gal = []; try { gal = JSON.parse(ci.gallery_images || '[]'); } catch(e) {}
+            colorImageMap[ci.color_name] = { primary: ci.primary_image_url || '', gallery: gal };
+          });
+
+          const SIZES = ['S','M','L','XL','2XL','3XL','4XL','5XL'];
+
+          // Build initial media list
           var galleryUrls = [];
           try { galleryUrls = JSON.parse(product.gallery_images || '[]'); } catch(e) {}
-          var allMedia = [];
-          if (product.image_url) allMedia.push(product.image_url);
-          galleryUrls.forEach(function(u) { if (u && allMedia.indexOf(u) === -1) allMedia.push(u); });
+          var baseMedia = [];
+          if (product.image_url) baseMedia.push(product.image_url);
+          galleryUrls.forEach(function(u) { if (u && baseMedia.indexOf(u) === -1) baseMedia.push(u); });
 
-          // Thumbnails
-          var thumbsHtml = '';
-          if (allMedia.length > 1) {
-            thumbsHtml = '<div id="gallery-thumbs" style="display:flex;flex-direction:column;gap:0.5rem;overflow-y:auto;max-height:500px;padding-right:4px;">';
-            allMedia.forEach(function(u, i) { thumbsHtml += mediaThumb(u, i, i === 0); });
-            thumbsHtml += '</div>';
+          function buildThumbsHtml(mediaArr) {
+            if (mediaArr.length <= 1) return '';
+            var h = '<div id="gallery-thumbs" style="display:flex;flex-direction:column;gap:0.5rem;overflow-y:auto;max-height:500px;padding-right:4px;">';
+            mediaArr.forEach(function(u, i) { h += mediaThumb(u, i, i === 0); });
+            return h + '</div>';
           }
 
-          var mainUrl = allMedia[0] || '';
-          var mainHtml = mainUrl
-            ? mainMediaHtml(mainUrl, product.name)
-            : '<div style="background:#f3f4f6;border-radius:0.5rem;height:400px;display:flex;align-items:center;justify-content:center;color:var(--text-light);">No image</div>';
+          function buildMainHtml(mediaArr) {
+            var mainUrl = mediaArr[0] || '';
+            return mainUrl
+              ? mainMediaHtml(mainUrl, product.name)
+              : '<div style="background:#f3f4f6;border-radius:0.5rem;height:400px;display:flex;align-items:center;justify-content:center;color:var(--text-light);">No image</div>';
+          }
 
-          // Price / quantity blocks
+          function renderGallery(mediaArr) {
+            var galContainer = document.getElementById('gallery-container');
+            if (!galContainer) return;
+            galContainer.innerHTML = buildThumbsHtml(mediaArr) + '<div id="main-media-wrap" style="flex:1;min-width:0;">' + buildMainHtml(mediaArr) + '</div>';
+            var snapped = mediaArr.slice();
+            window.selectMedia = function(idx) {
+              var url = snapped[idx]; if (!url) return;
+              document.getElementById('main-media-wrap').innerHTML = mainMediaHtml(url, product.name);
+              document.querySelectorAll('#gallery-thumbs > div').forEach(function(el, i) {
+                el.style.border = i === idx ? '2px solid var(--primary-color)' : '2px solid transparent';
+              });
+            };
+          }
+
+          // Price block
           var priceHtml = '';
           if (product.price !== null && product.price !== undefined) {
-            priceHtml += '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:0.5rem;padding:0.75rem 1.25rem;min-width:120px;">'
+            priceHtml = '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:0.5rem;padding:0.75rem 1.25rem;min-width:120px;">'
               + '<div style="font-size:0.8rem;color:#2563eb;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem;">Price</div>'
-              + '<div style="font-size:1.5rem;font-weight:700;color:#1e40af;">$' + parseFloat(product.price).toLocaleString('en-US', {minimumFractionDigits:2,maximumFractionDigits:2}) + '</div>'
-              + '</div>';
+              + '<div style="font-size:1.5rem;font-weight:700;color:#1e40af;">$' + parseFloat(product.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</div></div>';
           }
-          if (product.quantity !== null && product.quantity !== undefined) {
-            priceHtml += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:0.5rem;padding:0.75rem 1.25rem;min-width:120px;">'
-              + '<div style="font-size:0.8rem;color:#16a34a;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem;">MOQ / Quantity</div>'
-              + '<div style="font-size:1.5rem;font-weight:700;color:#15803d;">' + parseInt(product.quantity).toLocaleString() + ' units</div>'
-              + '</div>';
-          }
-          var priceSectionHtml = priceHtml
-            ? '<div style="display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">' + priceHtml + '</div>'
-            : '';
+          var priceSectionHtml = priceHtml ? '<div style="display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;">' + priceHtml + '</div>' : '';
 
-          // Colors section
+          // Color selector
           var colorsHtml = '';
-          var productColors = [];
-          try { productColors = JSON.parse(product.colors || '[]'); } catch(e) {}
-          if (Array.isArray(productColors) && productColors.length > 0) {
-            colorsHtml += '<div style="margin-bottom:1.5rem;">'
-              + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Available Colors</div>'
-              + '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
-            
-            productColors.forEach(function(color) {
-              var hex = getColorHex(color);
-              var isWhite = hex.toLowerCase() === '#ffffff' || hex.toLowerCase() === '#faf9f6';
-              var borderStyle = isWhite ? 'border: 1px solid #d1d5db;' : 'border: 1px solid transparent;';
-              colorsHtml += '<div style="display:flex;align-items:center;gap:0.35rem;padding:0.25rem 0.5rem;background:#f3f4f6;border-radius:0.25rem;font-size:0.85rem;font-weight:500;color:var(--text-dark);">'
-                + '<span style="width:12px;height:12px;border-radius:50%;background-color:' + hex + ';' + borderStyle + '"></span>'
-                + '<span>' + color + '</span>'
-                + '</div>';
-            });
-            colorsHtml += '</div></div>';
+          if (hasVariants) {
+            var colorNames = Object.keys(variantMap);
+            if (colorNames.length > 0) {
+              colorsHtml = '<div style="margin-bottom:1.25rem;">'
+                + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Color</div>'
+                + '<div id="color-selector" style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+              colorNames.forEach(function(color, idx) {
+                var hex = getColorHex(color);
+                var isWhite = hex === '#ffffff' || hex === '#faf9f6';
+                var swatchBorder = isWhite ? 'border:1px solid #d1d5db;' : '';
+                var isFirst = idx === 0;
+                colorsHtml += '<button type="button" data-color="' + color + '" onclick="selectColor(this.getAttribute(\\\'data-color\\\'))"'
+                  + ' style="display:flex;align-items:center;gap:0.4rem;padding:0.3rem 0.6rem;border-radius:0.375rem;cursor:pointer;font-size:0.85rem;font-weight:500;'
+                  + (isFirst ? 'border:2px solid var(--primary-color);background:#eff6ff;color:var(--primary-color);' : 'border:1px solid #d1d5db;background:#f9fafb;color:var(--text-dark);')
+                  + '">'
+                  + '<span style="width:13px;height:13px;border-radius:50%;background:' + hex + ';' + swatchBorder + 'flex-shrink:0;display:inline-block;"></span>'
+                  + color + '</button>';
+              });
+              colorsHtml += '</div></div>';
+            }
+          } else {
+            var productColors = [];
+            try { productColors = JSON.parse(product.colors || '[]'); } catch(e) {}
+            if (productColors.length > 0) {
+              colorsHtml = '<div style="margin-bottom:1.5rem;">'
+                + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Available Colors</div>'
+                + '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+              productColors.forEach(function(color) {
+                var hex = getColorHex(color);
+                var isWhite = hex === '#ffffff' || hex === '#faf9f6';
+                var borderStyle = isWhite ? 'border:1px solid #d1d5db;' : 'border:1px solid transparent;';
+                colorsHtml += '<div style="display:flex;align-items:center;gap:0.35rem;padding:0.25rem 0.5rem;background:#f3f4f6;border-radius:0.25rem;font-size:0.85rem;font-weight:500;">'
+                  + '<span style="width:12px;height:12px;border-radius:50%;background:' + hex + ';' + borderStyle + '"></span>'
+                  + '<span>' + color + '</span></div>';
+              });
+              colorsHtml += '</div></div>';
+            }
           }
 
-          // Sizes section
+          // Size selector
           var sizesHtml = '';
-          var productSizes = [];
-          try { productSizes = JSON.parse(product.sizes || '[]'); } catch(e) {}
-          if (Array.isArray(productSizes) && productSizes.length > 0) {
-            sizesHtml += '<div style="margin-bottom:1.5rem;">'
-              + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Available Sizes</div>'
-              + '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
-            
-            productSizes.forEach(function(size) {
-              sizesHtml += '<div style="padding:0.25rem 0.75rem;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:0.25rem;font-size:0.85rem;font-weight:600;color:var(--text-dark);min-width:32px;text-align:center;">'
-                + size
-                + '</div>';
+          if (hasVariants) {
+            sizesHtml = '<div style="margin-bottom:1.25rem;">'
+              + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Size</div>'
+              + '<div id="size-selector" style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+            SIZES.forEach(function(size) {
+              sizesHtml += '<button type="button" data-size="' + size + '" onclick="selectSize(this.getAttribute(\\\'data-size\\\'))"'
+                + ' style="padding:0.3rem 0.7rem;border:1px solid #d1d5db;border-radius:0.375rem;background:#f9fafb;cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--text-dark);">'
+                + size + '</button>';
             });
-            sizesHtml += '</div></div>';
+            sizesHtml += '</div><div id="size-qty-display" style="margin-top:0.6rem;min-height:1.5rem;"></div></div>';
+          } else {
+            var productSizes = [];
+            try { productSizes = JSON.parse(product.sizes || '[]'); } catch(e) {}
+            if (productSizes.length > 0) {
+              sizesHtml = '<div style="margin-bottom:1.5rem;">'
+                + '<div style="font-size:0.8rem;color:var(--text-light);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">Available Sizes</div>'
+                + '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+              productSizes.forEach(function(size) {
+                sizesHtml += '<div style="padding:0.25rem 0.75rem;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:0.25rem;font-size:0.85rem;font-weight:600;min-width:32px;text-align:center;">' + size + '</div>';
+              });
+              sizesHtml += '</div></div>';
+            }
           }
 
+          // Render page
           document.getElementById('product-detail').innerHTML =
             '<div style="margin-bottom:2rem;">'
               + '<a href="/" style="color:var(--text-light);text-decoration:none;">Home</a>'
@@ -317,8 +374,8 @@ export async function productDetailPage(request, env) {
             + '</div>'
             + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-bottom:3rem;" id="product-grid">'
               + '<div id="gallery-container" style="display:flex;gap:0.75rem;">'
-                + thumbsHtml
-                + '<div id="main-media-wrap" style="flex:1;min-width:0;">' + mainHtml + '</div>'
+                + buildThumbsHtml(baseMedia)
+                + '<div id="main-media-wrap" style="flex:1;min-width:0;">' + buildMainHtml(baseMedia) + '</div>'
               + '</div>'
               + '<div>'
                 + '<div style="margin-bottom:1rem;"><span style="background:var(--primary-color);color:white;padding:0.25rem 0.75rem;border-radius:1rem;font-size:0.85rem;">' + (product.category_name || 'General') + '</span></div>'
@@ -337,9 +394,7 @@ export async function productDetailPage(request, env) {
                   if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
                     try {
                       var safeHtml = renderMarkdown(mdText);
-                      if (safeHtml) {
-                        return '<div class="md-body">' + safeHtml + '</div>';
-                      }
+                      if (safeHtml) return '<div class="md-body">' + safeHtml + '</div>';
                       return '<p>No detailed description available</p>';
                     } catch (_e) {
                       return '<p style="color:var(--text-dark);line-height:1.8;white-space:pre-line;">' + mdText + '</p>';
@@ -349,49 +404,85 @@ export async function productDetailPage(request, env) {
                 })()
             + '</div>';
 
+          // Interaction state
+          var currentColor = hasVariants ? Object.keys(variantMap)[0] : null;
+          var currentSize = null;
+
+          window.selectColor = function(color) {
+            currentColor = color; currentSize = null;
+            document.querySelectorAll('#color-selector button').forEach(function(btn) {
+              var active = btn.getAttribute('data-color') === color;
+              btn.style.border = active ? '2px solid var(--primary-color)' : '1px solid #d1d5db';
+              btn.style.background = active ? '#eff6ff' : '#f9fafb';
+              btn.style.color = active ? 'var(--primary-color)' : 'var(--text-dark)';
+            });
+            document.querySelectorAll('#size-selector button').forEach(function(btn) {
+              btn.style.border = '1px solid #d1d5db'; btn.style.background = '#f9fafb'; btn.style.color = 'var(--text-dark)';
+            });
+            var qd = document.getElementById('size-qty-display'); if (qd) qd.innerHTML = '';
+            var ci = colorImageMap[color];
+            var mediaArr = [];
+            if (ci && ci.primary) mediaArr.push(ci.primary);
+            if (ci && ci.gallery) ci.gallery.forEach(function(u) { if (u && mediaArr.indexOf(u)===-1) mediaArr.push(u); });
+            if (!mediaArr.length) mediaArr = baseMedia.slice();
+            renderGallery(mediaArr);
+          };
+
+          window.selectSize = function(size) {
+            currentSize = size;
+            document.querySelectorAll('#size-selector button').forEach(function(btn) {
+              var active = btn.getAttribute('data-size') === size;
+              btn.style.border = active ? '2px solid var(--primary-color)' : '1px solid #d1d5db';
+              btn.style.background = active ? '#eff6ff' : '#f9fafb';
+              btn.style.color = active ? 'var(--primary-color)' : 'var(--text-dark)';
+            });
+            var el = document.getElementById('size-qty-display');
+            if (!el || !currentColor) return;
+            var qty = (variantMap[currentColor] && variantMap[currentColor][size] !== undefined) ? variantMap[currentColor][size] : null;
+            if (qty === null) {
+              el.innerHTML = '<span style="color:var(--text-light);font-size:0.85rem;">No stock data</span>';
+            } else if (qty === 0) {
+              el.innerHTML = '<span style="display:inline-flex;align-items:center;gap:0.35rem;background:#fef2f2;border:1px solid #fecaca;border-radius:0.375rem;padding:0.3rem 0.7rem;font-size:0.85rem;color:#dc2626;font-weight:600;">Out of stock</span>';
+            } else {
+              el.innerHTML = '<span style="display:inline-flex;align-items:center;gap:0.35rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:0.375rem;padding:0.3rem 0.7rem;font-size:0.85rem;color:#16a34a;font-weight:600;">'
+                + '<svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>'
+                + qty.toLocaleString() + ' pcs available</span>';
+            }
+          };
+
           window.selectMedia = function(idx) {
-            var url = allMedia[idx];
-            if (!url) return;
+            var url = baseMedia[idx]; if (!url) return;
             document.getElementById('main-media-wrap').innerHTML = mainMediaHtml(url, product.name);
             document.querySelectorAll('#gallery-thumbs > div').forEach(function(el, i) {
               el.style.border = i === idx ? '2px solid var(--primary-color)' : '2px solid transparent';
             });
           };
 
+          // Auto-select first color
+          if (hasVariants && currentColor) selectColor(currentColor);
+
           document.getElementById('send-inquiry-btn').addEventListener('click', function() {
-            // Pre-fill the contact form message with product context
-            var productName = product.name;
-            var productUrl = window.location.href;
-            
-            // Defensive retry logic: wait for toggleContactFormPanel to become available
-            var maxAttempts = 60; // 60 attempts × 50ms = 3 seconds max wait
-            var attemptCount = 0;
-            var pollInterval = 50; // Poll every 50ms
-            
+            var maxAttempts = 60, attemptCount = 0;
             var pollForFunction = function() {
               attemptCount++;
-              
               if (typeof window.toggleContactFormPanel === 'function') {
-                // Function is available - proceed with opening the panel
                 var messageField = document.getElementById('cfp-message');
                 if (messageField) {
-                  messageField.value = 'I am interested in: ' + productName + '\\nProduct URL: ' + productUrl + '\\n\\n';
+                  var context = 'I am interested in: ' + product.name;
+                  if (currentColor) context += '\\nColor: ' + currentColor;
+                  if (currentSize) context += '\\nSize: ' + currentSize;
+                  context += '\\nProduct URL: ' + window.location.href + '\\n\\n';
+                  messageField.value = context;
                 }
                 window.toggleContactFormPanel();
               } else if (attemptCount < maxAttempts) {
-                // Function not yet available, try again after delay
-                setTimeout(pollForFunction, pollInterval);
+                setTimeout(pollForFunction, 50);
               } else {
-                // Timeout reached - display error notification
                 if (typeof window.showNotification === 'function') {
-                  window.showNotification('Contact form is temporarily unavailable. Please try again in a moment.', 'error');
-                } else {
-                  alert('Contact form is temporarily unavailable. Please try again in a moment.');
-                }
+                  window.showNotification('Contact form is temporarily unavailable.', 'error');
+                } else { alert('Contact form is temporarily unavailable.'); }
               }
             };
-            
-            // Start polling
             pollForFunction();
           });
 

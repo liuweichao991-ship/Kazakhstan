@@ -7,6 +7,7 @@
 ## 功能特性
 
 ### ✅ 前台网站
+
 1. **首页** - 企业简介和精选产品展示
 2. **产品页** - 产品列表，支持分类筛选和搜索
 3. **产品详情页** - 产品详细信息和询盘表单
@@ -15,6 +16,7 @@
 6. **响应式设计** - 自适应移动端、平板和桌面设备
 
 ### ✅ 后台管理系统
+
 1. **基于角色的访问控制**
    - **超级管理员** - 完整的增删改查权限
    - **普通管理员** - 只读权限（仅查看）
@@ -25,6 +27,7 @@
 6. **网站设置** - 配置网站信息、联系方式和社交媒体链接（仅超级管理员）
 
 ### ✅ 后端 API
+
 1. **产品 API** - 完整的 CRUD 操作（GET/POST/PUT/DELETE）
 2. **询盘 API** - 提交询盘、查询和状态更新
 3. **管理员 API** - 登录认证、Token 验证、角色管理
@@ -32,6 +35,7 @@
 5. **设置 API** - 通过 KV 存储管理网站配置
 
 ### ✅ 数据库设计
+
 - **Products 表** - 产品信息存储
 - **Inquiries 表** - 客户询盘记录
 - **Admins 表** - 管理员账户及角色权限
@@ -115,10 +119,11 @@ wrangler d1 execute garment_database --file=./schema/schema.sql
 ```
 
 这将会创建：
+
 - 数据库表（products、inquiries、admins）
 - 两个默认管理员账户：
-  - **超级管理员**：用户名 `admin123`，密码 `admin123`
-  - **普通管理员**：用户名 `staff`，密码 `staff123`
+  - **超级管理员**：用户名 `admin123`，密码 `chen123`
+  - **普通管理员**：用户名 `staff`，密码 `chen1256`
 - 用于测试的示例产品数据
 
 ### 7. 本地开发
@@ -137,18 +142,16 @@ npm run dev
 npm run deploy
 ```
 
-
-
 ## 管理员账户管理
 
 ### 默认凭据
 
 初始设置后，您将拥有两个管理员账户：
 
-| 用户名 | 密码 | 角色 | 权限 |
-|--------|------|------|------|
-| admin123 | admin123 | 超级管理员 | 完整的增删改查权限 |
-| staff | staff123 | 普通管理员 | 只读权限 |
+| 用户名   | 密码     | 角色       | 权限               |
+| -------- | -------- | ---------- | ------------------ |
+| admin123 | chen123  | 超级管理员 | 完整的增删改查权限 |
+| staff    | chen1256 | 普通管理员 | 只读权限           |
 
 ### 安全最佳实践
 
@@ -162,13 +165,13 @@ npm run deploy
 async function hashPassword(password) {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 // 为您的新密码生成哈希
-hashPassword('your-new-secure-password').then(hash => console.log(hash));
+hashPassword("your-new-secure-password").then((hash) => console.log(hash));
 ```
 
 #### 2. 在数据库中更新密码
@@ -181,6 +184,7 @@ WHERE username = 'admin';
 ```
 
 通过 Wrangler CLI 执行：
+
 ```bash
 wrangler d1 execute garment_database --command="UPDATE admins SET password_hash = 'your-hash' WHERE username = 'admin';"
 ```
@@ -190,6 +194,7 @@ wrangler d1 execute garment_database --command="UPDATE admins SET password_hash 
 #### 3. 配置 JWT Secret
 
 **方式 A**：使用 wrangler.toml（生产环境不推荐）
+
 ```toml
 [vars]
 JWT_SECRET = "your-very-secure-secret-key-change-this"
@@ -197,6 +202,7 @@ ENVIRONMENT = "production"
 ```
 
 **方式 B**：使用 Cloudflare Dashboard Secrets（推荐）
+
 ```bash
 wrangler secret put JWT_SECRET
 # 提示时输入您的密钥
@@ -324,6 +330,7 @@ cf_b2b/
 ## 技术支持
 
 遇到问题时请检查：
+
 1. 检查 Wrangler CLI 版本：`wrangler --version`
 2. 验证 D1 数据库初始化
 3. 检查 wrangler.toml 配置

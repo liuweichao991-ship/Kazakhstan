@@ -860,15 +860,9 @@ export async function adminDashboard(env) {
           </select>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label class="form-label" for="product-price">Price (USD)</label>
-            <input type="number" id="product-price" name="price" class="form-input" placeholder="0.00" min="0" step="0.01">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="product-quantity">Quantity / MOQ</label>
-            <input type="number" id="product-quantity" name="quantity" class="form-input" placeholder="e.g. 100" min="0" step="1">
-          </div>
+        <div class="form-group">
+          <label class="form-label" for="product-price">Price (USD)</label>
+          <input type="number" id="product-price" name="price" class="form-input" placeholder="0.00" min="0" step="0.01">
         </div>
 
         <div class="form-group">
@@ -913,16 +907,19 @@ export async function adminDashboard(env) {
         </div>
 
         <div class="form-group">
-          <label class="form-label">Available Colors</label>
-          <div id="product-colors-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 0.375rem; max-height: 180px; overflow-y: auto; background: #fff;">
-            <!-- Color options will be populated dynamically -->
-          </div>
-        </div>
+          <label class="form-label">Product Variants <span style="font-weight:400;color:var(--text-light);font-size:0.85rem;">(Select colors, then enter quantity per size)</span></label>
 
-        <div class="form-group">
-          <label class="form-label">Available Sizes</label>
-          <div id="product-sizes-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; border: 1px solid var(--border-color); padding: 0.75rem; border-radius: 0.375rem; max-height: 120px; overflow-y: auto; background: #fff;">
-            <!-- Size options will be populated dynamically -->
+          <!-- Step 1: Color selection -->
+          <div style="margin-bottom:0.75rem;">
+            <div style="font-size:0.8rem;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.5rem;">1. Select Colors</div>
+            <div id="product-colors-container" style="display:flex;flex-wrap:wrap;gap:0.4rem;border:1px solid var(--border-color);padding:0.6rem;border-radius:0.375rem;max-height:160px;overflow-y:auto;background:#fff;">
+              <!-- populated by renderColorsForm() -->
+            </div>
+          </div>
+
+          <!-- Step 2: Per-color variant panels -->
+          <div id="variant-panels-container" style="display:flex;flex-direction:column;gap:0.75rem;">
+            <!-- populated dynamically -->
           </div>
         </div>
 
@@ -1136,49 +1133,330 @@ export async function adminDashboard(env) {
       "Emerald Green", "Mud Gray", "Dark Gray", "Dark Green", "Coffee", "Rose Red",
       "Off-white", "Denim Blue", "Light Brown", "Bottle Green", "Coffee Brown",
       "Light Khaki", "Jay Blue", "Heather Gray", "Deep Green", "Gray", "Green",
-      "Apricot", "Bright Green", "Navy", "Yellow Khaki", "Burgundy", "Medium Blue"
+      "Apricot", "Bright Green", "Navy", "Yellow Khaki", "Burgundy", "Medium Blue",
+      "Purple", "Orange"
     ];
+
+    // ─── Variant Matrix Builder ────────────────────────────────────────────
+    // In-memory state: { [colorName]: { images: { primary:'', gallery:[] }, sizes: { S:0, M:0, ... } } }
+    let variantData = {};
+
+    const PREDEFINED_SIZES = ["S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
 
     function getColorHex(color) {
       const map = {
-        "black": "#000000",
-        "royal blue": "#4169e1",
-        "white": "#ffffff",
-        "navy blue": "#000080",
-        "medium gray": "#808080",
-        "caramel": "#af6e2d",
-        "emerald green": "#50c878",
-        "mud gray": "#796d62",
-        "dark gray": "#333333",
-        "dark green": "#013220",
-        "coffee": "#6f4e37",
-        "rose red": "#c21e56",
-        "off-white": "#faf9f6",
-        "denim blue": "#3b5f8f",
-        "light brown": "#b5651d",
-        "bottle green": "#006a4e",
-        "coffee brown": "#4a3b32",
-        "light khaki": "#f0e68c",
-        "jay blue": "#2874a6",
-        "heather gray": "#b2beb5",
-        "deep green": "#05472a",
-        "gray": "#9ca3af",
-        "green": "#10b981",
-        "apricot": "#fbceb1",
-        "bright green": "#4ade80",
-        "navy": "#00003b",
-        "yellow khaki": "#c3b091",
-        "burgundy": "#800020",
-        "medium blue": "#3b82f6"
+        "black": "#000000", "royal blue": "#4169e1", "white": "#ffffff",
+        "navy blue": "#000080", "medium gray": "#808080", "caramel": "#af6e2d",
+        "emerald green": "#50c878", "mud gray": "#796d62", "dark gray": "#333333",
+        "dark green": "#013220", "coffee": "#6f4e37", "rose red": "#c21e56",
+        "off-white": "#faf9f6", "denim blue": "#3b5f8f", "light brown": "#b5651d",
+        "bottle green": "#006a4e", "coffee brown": "#4a3b32", "light khaki": "#f0e68c",
+        "jay blue": "#2874a6", "heather gray": "#b2beb5", "deep green": "#05472a",
+        "gray": "#9ca3af", "green": "#10b981", "apricot": "#fbceb1",
+        "bright green": "#4ade80", "navy": "#00003b", "yellow khaki": "#c3b091",
+        "burgundy": "#800020", "medium blue": "#3b82f6", "purple": "#800080", "orange": "#ffa500"
       };
       return map[color.toLowerCase().trim()] || "#cccccc";
     }
 
-    window.toggleColorSwatch = function(checkbox) {
-      const swatch = checkbox.nextElementSibling;
-      if (swatch && swatch.classList.contains('color-swatch')) {
-        swatch.style.display = checkbox.checked ? 'inline-block' : 'none';
+    // Called when a color checkbox is toggled
+    window.onColorVariantToggle = function(checkbox) {
+      const color = checkbox.value;
+      if (checkbox.checked) {
+        if (!variantData[color]) {
+          variantData[color] = { images: { primary: '', gallery: [] }, sizes: {} };
+          PREDEFINED_SIZES.forEach(s => { variantData[color].sizes[s] = 0; });
+        }
+        addVariantPanel(color);
+      } else {
+        delete variantData[color];
+        const panel = document.getElementById(\`vp-\${color.replace(/\\s+/g,'_')}\`);
+        if (panel) panel.remove();
       }
+      // update swatch
+      const swatch = checkbox.parentElement.querySelector('.color-swatch');
+      if (swatch) swatch.style.display = checkbox.checked ? 'inline-block' : 'none';
+    };
+
+    function addVariantPanel(color) {
+      const container = document.getElementById('variant-panels-container');
+      if (!container) return;
+      const colorId = color.replace(/\\s+/g,'_');
+      if (document.getElementById(\`vp-\${colorId}\`)) return; // already exists
+      const hex = getColorHex(color);
+      const isLight = hex === '#ffffff' || hex === '#faf9f6';
+      const swatchBorder = isLight ? 'border:1px solid #d1d5db;' : '';
+      const panel = document.createElement('div');
+      panel.id = \`vp-\${colorId}\`;
+      panel.style.cssText = 'border:1px solid #e5e7eb;border-radius:0.5rem;overflow:hidden;';
+      // Header
+      const header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:center;gap:0.5rem;padding:0.6rem 0.75rem;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-weight:600;font-size:0.9rem;';
+      header.innerHTML = \`<span style="width:14px;height:14px;border-radius:50%;background:\${hex};\${swatchBorder}display:inline-block;flex-shrink:0;"></span>\${color}\`;
+      panel.appendChild(header);
+      // Body
+      const body = document.createElement('div');
+      body.style.cssText = 'padding:0.75rem;display:flex;flex-direction:column;gap:0.6rem;';
+      
+      // Primary image URL & Upload
+      const imgRow = document.createElement('div');
+      imgRow.style.cssText = 'display:flex;flex-direction:column;gap:0.4rem;';
+      imgRow.innerHTML = \`
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+          <span style="font-size:0.8rem;font-weight:500;color:var(--text-light);min-width:80px;">Primary Image</span>
+          <input type="url" id="vp-img-\${colorId}" placeholder="https://…"
+            style="flex:1;min-width:180px;padding:0.35rem 0.6rem;border:1px solid #d1d5db;border-radius:0.25rem;font-size:0.82rem;"
+            oninput="if(!variantData['\${color}'])variantData['\${color}']={images:{primary:'',gallery:[]},sizes:{}};variantData['\${color}'].images.primary=this.value; window.renderVariantPrimaryPreview('\${color}')" value="\${variantData[color]?.images?.primary||''}">
+          <div class="upload-btn-wrapper" style="flex-shrink:0;">
+            <button type="button" class="btn-upload" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">Upload</button>
+            <input type="file" accept="image/*" onchange="window.handleVariantPrimaryUpload(event, '\${color}')">
+          </div>
+        </div>
+        <div id="vp-img-status-\${colorId}" style="display:none;color:var(--primary-color);font-size:0.75rem;margin-left:85px;">Uploading...</div>
+        <div id="vp-img-preview-\${colorId}" style="margin-left:85px;"></div>
+      \`;
+      body.appendChild(imgRow);
+      
+      // Gallery images Upload & URL list
+      const galRow = document.createElement('div');
+      galRow.style.cssText = 'display:flex;flex-direction:column;gap:0.4rem;';
+      galRow.innerHTML = \`
+        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+          <span style="font-size:0.8rem;font-weight:500;color:var(--text-light);min-width:80px;">Gallery Media</span>
+          <div style="flex:1;min-width:180px;display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+            <div class="upload-btn-wrapper" style="flex-shrink:0;">
+              <button type="button" class="btn-upload" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">Upload</button>
+              <input type="file" accept="image/*,video/*" onchange="window.handleVariantGalleryUpload(event, '\${color}')">
+            </div>
+            <span style="color:var(--text-light);font-size:0.75rem;">or</span>
+            <input type="url" id="vp-gal-url-input-\${colorId}" placeholder="Enter image or video URL..."
+              style="flex:1;min-width:120px;padding:0.35rem 0.6rem;border:1px solid #d1d5db;border-radius:0.25rem;font-size:0.82rem;margin:0;">
+            <button type="button" onclick="window.handleAddVariantGalleryUrl('\${color}')" class="btn btn-primary"
+              style="padding: 0.35rem 0.75rem; font-size: 0.82rem; white-space: nowrap;">Add URL</button>
+          </div>
+        </div>
+        <div id="vp-gal-status-\${colorId}" style="display:none;color:var(--primary-color);font-size:0.75rem;margin-left:85px;">Uploading...</div>
+        <div id="vp-gallery-preview-\${colorId}" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-left:85px;"></div>
+      \`;
+      body.appendChild(galRow);
+      
+      // Size quantity grid
+      const sizeGrid = document.createElement('div');
+      sizeGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:0.4rem;margin-top:0.25rem;';
+      PREDEFINED_SIZES.forEach(size => {
+        const cell = document.createElement('div');
+        cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:0.15rem;';
+        const currentQty = variantData[color]?.sizes?.[size] ?? 0;
+        cell.innerHTML = \`
+          <label style="font-size:0.75rem;font-weight:600;color:var(--text-dark);">\${size}</label>
+          <input type="number" min="0" step="1" value="\${currentQty}"
+            style="width:100%;padding:0.25rem;border:1px solid #d1d5db;border-radius:0.25rem;text-align:center;font-size:0.82rem;"
+            oninput="if(!variantData['\${color}'])variantData['\${color}']={images:{primary:'',gallery:[]},sizes:{}};variantData['\${color}'].sizes['\${size}']=parseInt(this.value)||0">
+        \`;
+        sizeGrid.appendChild(cell);
+      });
+      body.appendChild(sizeGrid);
+      panel.appendChild(body);
+      container.appendChild(panel);
+
+      // Render previews
+      window.renderVariantPrimaryPreview(color);
+      window.renderVariantGalleryPreview(color);
+    }
+
+    window.renderVariantPrimaryPreview = function(color) {
+      const colorId = color.replace(/\\s+/g,'_');
+      const previewDiv = document.getElementById(\`vp-img-preview-\${colorId}\`);
+      if (!previewDiv) return;
+      const url = variantData[color]?.images?.primary || '';
+      const input = document.getElementById(\`vp-img-\${colorId}\`);
+      if (input) input.value = url;
+      if (url) {
+        previewDiv.innerHTML = \`
+          <div style="position: relative; width: 50px; height: 50px; border-radius: 0.25rem; overflow: hidden; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; background: #fafafa; margin-top: 0.25rem;">
+            <img src="\${getImageKitUrl(url, 'w-50,h-50,cm-pad_resize')}" style="width: 100%; height: 100%; object-fit: cover;">
+            <button type="button" onclick="window.removeVariantPrimary('\${color}')" 
+              style="position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 11px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;">&times;</button>
+          </div>
+        \`;
+      } else {
+        previewDiv.innerHTML = '';
+      }
+    };
+
+    window.removeVariantPrimary = function(color) {
+      if (variantData[color]) {
+        variantData[color].images.primary = '';
+      }
+      window.renderVariantPrimaryPreview(color);
+    };
+
+    window.handleVariantPrimaryUpload = async function(event, color) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        showNotification('Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.', 'error');
+        return;
+      }
+
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        showNotification('File too large. Maximum size is 5MB.', 'error');
+        return;
+      }
+
+      const colorId = color.replace(/\\s+/g,'_');
+      const statusEl = document.getElementById(\`vp-img-status-\${colorId}\`);
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Uploading...';
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/upload/image', {
+          method: 'POST',
+          headers: { 'Authorization': \`Bearer \${token}\` },
+          body: formData,
+        });
+        const result = await response.json();
+        if (result.success) {
+          if (!variantData[color]) {
+            variantData[color] = { images: { primary: '', gallery: [] }, sizes: {} };
+          }
+          variantData[color].images.primary = result.data.url;
+          window.renderVariantPrimaryPreview(color);
+          showNotification('Primary image uploaded successfully', 'success');
+        } else {
+          showNotification(result.error || 'Upload failed', 'error');
+        }
+      } catch (err) {
+        showNotification('Upload error', 'error');
+      } finally {
+        if (statusEl) statusEl.style.display = 'none';
+        event.target.value = '';
+      }
+    };
+
+    window.renderVariantGalleryPreview = function(color) {
+      const colorId = color.replace(/\\s+/g,'_');
+      const container = document.getElementById(\`vp-gallery-preview-\${colorId}\`);
+      if (!container) return;
+      container.innerHTML = '';
+
+      const urls = variantData[color]?.images?.gallery || [];
+      urls.forEach(url => {
+        const item = document.createElement('div');
+        item.style.cssText = 'position: relative; width: 50px; height: 50px; border-radius: 0.25rem; overflow: hidden; border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; background: #fafafa;';
+
+        const isVideo = !!url.match(/\\.(mp4|webm|ogg|mov)/i);
+        if (isVideo) {
+          item.innerHTML = '<video src="' + url + '" style="width:100%;height:100%;object-fit:cover;" muted></video>'
+            + '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;font-size:0.7rem;text-shadow:0 1px 3px rgba(0,0,0,0.8);">&#9654;</div>';
+        } else {
+          item.innerHTML = '<img src="' + getImageKitUrl(url, 'w-50,h-50,cm-pad_resize') + '" style="width:100%;height:100%;object-fit:cover;">';
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;width:16px;height:16px;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;';
+        removeBtn.onclick = function() {
+          if (variantData[color]) {
+            variantData[color].images.gallery = variantData[color].images.gallery.filter(u => u !== url);
+          }
+          window.renderVariantGalleryPreview(color);
+        };
+        item.appendChild(removeBtn);
+        container.appendChild(item);
+      });
+    };
+
+    window.handleVariantGalleryUpload = async function(event, color) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+      if (!allowedTypes.includes(file.type)) {
+        showNotification('Invalid file type.', 'error');
+        return;
+      }
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        showNotification('File too large. Maximum size is 50MB.', 'error');
+        return;
+      }
+
+      const colorId = color.replace(/\\s+/g,'_');
+      const statusEl = document.getElementById(\`vp-gal-status-\${colorId}\`);
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Uploading...';
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/upload/image', {
+          method: 'POST',
+          headers: { 'Authorization': \`Bearer \${token}\` },
+          body: formData,
+        });
+        const result = await response.json();
+        if (result.success) {
+          if (!variantData[color]) {
+            variantData[color] = { images: { primary: '', gallery: [] }, sizes: {} };
+          }
+          if (!variantData[color].images.gallery) {
+            variantData[color].images.gallery = [];
+          }
+          if (!variantData[color].images.gallery.includes(result.data.url)) {
+            variantData[color].images.gallery.push(result.data.url);
+          }
+          window.renderVariantGalleryPreview(color);
+          showNotification('Media added to variant gallery', 'success');
+        } else {
+          showNotification(result.error || 'Upload failed', 'error');
+        }
+      } catch (err) {
+        showNotification('Upload error', 'error');
+      } finally {
+        if (statusEl) statusEl.style.display = 'none';
+        event.target.value = '';
+      }
+    };
+
+    window.handleAddVariantGalleryUrl = function(color) {
+      const colorId = color.replace(/\\s+/g,'_');
+      const urlInput = document.getElementById(\`vp-gal-url-input-\${colorId}\`);
+      if (!urlInput) return;
+      const url = urlInput.value.trim();
+      if (!url) {
+        showNotification('Please enter a URL', 'error');
+        return;
+      }
+      try {
+        new URL(url);
+      } catch (e) {
+        showNotification('Please enter a valid URL (including http/https)', 'error');
+        return;
+      }
+
+      if (!variantData[color]) {
+        variantData[color] = { images: { primary: '', gallery: [] }, sizes: {} };
+      }
+      if (!variantData[color].images.gallery) {
+        variantData[color].images.gallery = [];
+      }
+      if (!variantData[color].images.gallery.includes(url)) {
+        variantData[color].images.gallery.push(url);
+      }
+      window.renderVariantGalleryPreview(color);
+      urlInput.value = '';
+      showNotification('URL added to variant gallery', 'success');
     };
 
     function renderColorsForm() {
@@ -1186,31 +1464,81 @@ export async function adminDashboard(env) {
       if (!container) return;
       container.innerHTML = PREDEFINED_COLORS.map(color => {
         const hex = getColorHex(color);
-        const isWhite = hex.toLowerCase() === '#ffffff' || hex.toLowerCase() === '#faf9f6';
-        const borderStyle = isWhite ? 'border: 1px solid #d1d5db;' : 'border: 1px solid transparent;';
+        const isWhite = hex === '#ffffff' || hex === '#faf9f6';
+        const borderStyle = isWhite ? 'border:1px solid #d1d5db;' : 'border:1px solid transparent;';
         return \`
-          <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; font-size: 0.85rem; user-select: none; background: #f9fafb;">
-            <input type="checkbox" name="colors" value="\${color}" onchange="toggleColorSwatch(this)" style="width: 15px; height: 15px; cursor: pointer;">
-            <span class="color-swatch" style="display: none; width: 12px; height: 12px; border-radius: 50%; background-color: \${hex}; \${borderStyle}"></span>
-            <span style="font-weight: 500;">\${color}</span>
+          <label style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;padding:0.2rem 0.45rem;border:1px solid #e5e7eb;border-radius:0.25rem;font-size:0.82rem;user-select:none;background:#f9fafb;">
+            <input type="checkbox" name="colors" value="\${color}" onchange="onColorVariantToggle(this)" style="width:14px;height:14px;cursor:pointer;">
+            <span class="color-swatch" style="display:none;width:11px;height:11px;border-radius:50%;background:\${hex};\${borderStyle}"></span>
+            <span style="font-weight:500;">\${color}</span>
           </label>
         \`;
       }).join('');
     }
 
-    const PREDEFINED_SIZES = ["S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
+    function resetVariantBuilder() {
+      variantData = {};
+      const container = document.getElementById('variant-panels-container');
+      if (container) container.innerHTML = '';
+      const colorCbs = document.querySelectorAll('input[name="colors"]');
+      colorCbs.forEach(cb => {
+        cb.checked = false;
+        const swatch = cb.parentElement.querySelector('.color-swatch');
+        if (swatch) swatch.style.display = 'none';
+      });
+    }
 
-    function renderSizesForm() {
-      const container = document.getElementById('product-sizes-container');
-      if (!container) return;
-      container.innerHTML = PREDEFINED_SIZES.map(size => {
-        return \`
-          <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; padding: 0.25rem 0.5rem; border: 1px solid #e5e7eb; border-radius: 0.25rem; font-size: 0.85rem; user-select: none; background: #f9fafb;">
-            <input type="checkbox" name="sizes" value="\${size}" style="width: 15px; height: 15px; cursor: pointer;">
-            <span style="font-weight: 500;">\${size}</span>
-          </label>
-        \`;
-      }).join('');
+    function serializeVariants() {
+      const variants = [];
+      const colorImages = [];
+      Object.entries(variantData).forEach(([colorName, data]) => {
+        colorImages.push({
+          color_name: colorName,
+          primary_image_url: data.images.primary || '',
+          gallery_images: data.images.gallery || [],
+        });
+        Object.entries(data.sizes || {}).forEach(([sizeName, qty]) => {
+          variants.push({ color_name: colorName, size_name: sizeName, quantity: parseInt(qty) || 0 });
+        });
+      });
+      return { variants, color_images: colorImages };
+    }
+
+    function populateVariantBuilder(productVariants, productColorImages) {
+      resetVariantBuilder();
+      // Build variantData from API data
+      if (Array.isArray(productColorImages)) {
+        productColorImages.forEach(ci => {
+          if (!variantData[ci.color_name]) {
+            variantData[ci.color_name] = { images: { primary: '', gallery: [] }, sizes: {} };
+            PREDEFINED_SIZES.forEach(s => { variantData[ci.color_name].sizes[s] = 0; });
+          }
+          variantData[ci.color_name].images.primary = ci.primary_image_url || '';
+          let gal = [];
+          try { gal = JSON.parse(ci.gallery_images || '[]'); } catch(e) {}
+          variantData[ci.color_name].images.gallery = gal;
+        });
+      }
+      if (Array.isArray(productVariants)) {
+        productVariants.forEach(v => {
+          if (!variantData[v.color_name]) {
+            variantData[v.color_name] = { images: { primary: '', gallery: [] }, sizes: {} };
+            PREDEFINED_SIZES.forEach(s => { variantData[v.color_name].sizes[s] = 0; });
+          }
+          variantData[v.color_name].sizes[v.size_name] = v.quantity || 0;
+        });
+      }
+      // Check the color checkboxes and render panels
+      const colorsInData = Object.keys(variantData);
+      const colorCbs = document.querySelectorAll('input[name="colors"]');
+      colorCbs.forEach(cb => {
+        if (colorsInData.includes(cb.value)) {
+          cb.checked = true;
+          const swatch = cb.parentElement.querySelector('.color-swatch');
+          if (swatch) swatch.style.display = 'inline-block';
+          addVariantPanel(cb.value);
+        }
+      });
     }
 
     // Check authentication
@@ -1948,12 +2276,11 @@ export async function adminDashboard(env) {
 
     window.editProduct = async function(id) {
       try {
-        // Fetch product details
         const response = await API.get(\`/products/\${id}\`);
         if (response.success) {
           const product = response.data;
 
-          // Populate form
+          // Populate basic fields
           document.getElementById('product-id').value = product.id;
           document.getElementById('product-name').value = product.name || '';
           document.getElementById('product-category').value = product.category_id || '';
@@ -1961,30 +2288,11 @@ export async function adminDashboard(env) {
           document.getElementById('product-detailed-description').value = product.detailed_description || '';
           document.getElementById('product-image-url').value = product.image_url || '';
           document.getElementById('product-price').value = product.price !== null && product.price !== undefined ? product.price : '';
-          document.getElementById('product-quantity').value = product.quantity !== null && product.quantity !== undefined ? product.quantity : '';
           document.getElementById('product-is-featured').checked = !!product.is_featured;
           document.getElementById('product-is-active').checked = !!product.is_active;
 
-          // Populate colors checkboxes
-          let productColors = [];
-          try { productColors = JSON.parse(product.colors || '[]'); } catch(e) {}
-          const colorCheckboxes = document.querySelectorAll('input[name="colors"]');
-          colorCheckboxes.forEach(cb => {
-            const isChecked = productColors.includes(cb.value);
-            cb.checked = isChecked;
-            const swatch = cb.nextElementSibling;
-            if (swatch && swatch.classList.contains('color-swatch')) {
-              swatch.style.display = isChecked ? 'inline-block' : 'none';
-            }
-          });
-
-          // Populate sizes checkboxes
-          let productSizes = [];
-          try { productSizes = JSON.parse(product.sizes || '[]'); } catch(e) {}
-          const sizeCheckboxes = document.querySelectorAll('input[name="sizes"]');
-          sizeCheckboxes.forEach(cb => {
-            cb.checked = productSizes.includes(cb.value);
-          });
+          // Populate variant matrix
+          populateVariantBuilder(product.variants || [], product.color_images || []);
 
           // Show image preview if exists
           const preview = document.getElementById('image-preview');
@@ -1999,10 +2307,7 @@ export async function adminDashboard(env) {
           try { galleryUrls = JSON.parse(product.gallery_images || '[]'); } catch(e) {}
           renderGalleryPreview(galleryUrls);
 
-          // Update modal title
           document.getElementById('modal-title').textContent = 'Edit Product';
-
-          // Show modal
           document.getElementById('product-modal').classList.add('active');
         }
       } catch (error) {
@@ -2021,46 +2326,21 @@ export async function adminDashboard(env) {
       if (urlInput) urlInput.value = '';
       document.getElementById('gallery-preview').innerHTML = '';
       document.getElementById('product-gallery-images').value = '[]';
-      
-      const colorCheckboxes = document.querySelectorAll('input[name="colors"]');
-      colorCheckboxes.forEach(cb => {
-        cb.checked = false;
-        const swatch = cb.nextElementSibling;
-        if (swatch && swatch.classList.contains('color-swatch')) {
-          swatch.style.display = 'none';
-        }
-      });
-
-      const sizeCheckboxes = document.querySelectorAll('input[name="sizes"]');
-      sizeCheckboxes.forEach(cb => {
-        cb.checked = false;
-      });
+      resetVariantBuilder();
     };
 
     window.openAddProductModal = function() {
-      // Reset form
       document.getElementById('product-form').reset();
       document.getElementById('product-id').value = '';
       document.getElementById('product-is-active').checked = true;
-
-      const colorCheckboxes = document.querySelectorAll('input[name="colors"]');
-      colorCheckboxes.forEach(cb => {
-        cb.checked = false;
-        const swatch = cb.nextElementSibling;
-        if (swatch && swatch.classList.contains('color-swatch')) {
-          swatch.style.display = 'none';
-        }
-      });
-
-      const sizeCheckboxes = document.querySelectorAll('input[name="sizes"]');
-      sizeCheckboxes.forEach(cb => {
-        cb.checked = false;
-      });
-
-      // Update modal title
+      const preview = document.getElementById('image-preview');
+      if (preview) preview.innerHTML = '';
+      const galleryPreview = document.getElementById('gallery-preview');
+      if (galleryPreview) galleryPreview.innerHTML = '';
+      const galleryInput = document.getElementById('product-gallery-images');
+      if (galleryInput) galleryInput.value = '[]';
+      resetVariantBuilder();
       document.getElementById('modal-title').textContent = 'Add New Product';
-
-      // Show modal
       document.getElementById('product-modal').classList.add('active');
     };
 
@@ -2070,7 +2350,14 @@ export async function adminDashboard(env) {
 
       const productId = document.getElementById('product-id').value;
       const priceVal = document.getElementById('product-price').value;
-      const quantityVal = document.getElementById('product-quantity').value;
+      const { variants, color_images } = serializeVariants();
+
+      // Derive flat colors/sizes arrays from variantData for backward compat
+      const colors = Object.keys(variantData);
+      const sizesSet = new Set();
+      Object.values(variantData).forEach(d => Object.keys(d.sizes || {}).forEach(s => sizesSet.add(s)));
+      const sizes = PREDEFINED_SIZES.filter(s => sizesSet.has(s));
+
       const formData = {
         name: document.getElementById('product-name').value,
         category_id: document.getElementById('product-category').value,
@@ -2078,21 +2365,20 @@ export async function adminDashboard(env) {
         detailed_description: document.getElementById('product-detailed-description').value,
         image_url: document.getElementById('product-image-url').value,
         gallery_images: (() => { try { return JSON.parse(document.getElementById('product-gallery-images').value || '[]'); } catch(e) { return []; } })(),
-        colors: Array.from(document.querySelectorAll('input[name="colors"]:checked')).map(cb => cb.value),
-        sizes: Array.from(document.querySelectorAll('input[name="sizes"]:checked')).map(cb => cb.value),
+        colors,
+        sizes,
         price: priceVal !== '' ? parseFloat(priceVal) : null,
-        quantity: quantityVal !== '' ? parseInt(quantityVal) : null,
         is_featured: document.getElementById('product-is-featured').checked,
         is_active: document.getElementById('product-is-active').checked,
+        variants,
+        color_images,
       };
 
       try {
         let response;
         if (productId) {
-          // Update existing product
           response = await API.put(\`/products/\${productId}\`, formData);
         } else {
-          // Create new product
           response = await API.post('/products', formData);
         }
 
@@ -2605,7 +2891,6 @@ Date: \${new Date(inquiry.created_at).toLocaleString()}
     // Initialize dashboard
     loadDashboardStats();
     renderColorsForm();
-    renderSizesForm();
   </script>
 </body>
 </html>`;

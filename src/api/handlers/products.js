@@ -20,6 +20,12 @@ export async function handleProducts(request, env, corsHeaders) {
     return getFeaturedProducts(env, corsHeaders);
   }
 
+  // GET /api/products/:id/variants - Get variants and color images
+  if (method === "GET" && pathParts.length === 4 && pathParts[3] === "variants") {
+    const productId = pathParts[2];
+    return getProductVariants(env, productId, corsHeaders);
+  }
+
   // GET /api/products/:id - Get single product
   if (method === "GET" && pathParts.length === 3) {
     const productId = pathParts[2];
@@ -112,6 +118,30 @@ async function getFeaturedProducts(env, corsHeaders) {
   }
 }
 
+// Get product variants and color images
+async function getProductVariants(env, productId, corsHeaders) {
+  try {
+    const [variantsResult, colorImagesResult] = await Promise.all([
+      env.DB.prepare("SELECT color_name, size_name, quantity FROM product_variants WHERE product_id = ? ORDER BY color_name, size_name").bind(productId).all(),
+      env.DB.prepare("SELECT color_name, primary_image_url, gallery_images FROM product_color_images WHERE product_id = ? ORDER BY color_name").bind(productId).all(),
+    ]);
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        variants: variantsResult.results || [],
+        color_images: colorImagesResult.results || [],
+      }
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+}
+
 // Get single product
 async function getProduct(env, productId, corsHeaders, request) {
   try {
@@ -145,6 +175,14 @@ async function getProduct(env, productId, corsHeaders, request) {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Fetch variants and color images
+    const [variantsResult, colorImagesResult] = await Promise.all([
+      env.DB.prepare("SELECT color_name, size_name, quantity FROM product_variants WHERE product_id = ? ORDER BY color_name, size_name").bind(productId).all(),
+      env.DB.prepare("SELECT color_name, primary_image_url, gallery_images FROM product_color_images WHERE product_id = ? ORDER BY color_name").bind(productId).all(),
+    ]);
+    product.variants = variantsResult.results || [];
+    product.color_images = colorImagesResult.results || [];
 
     return new Response(JSON.stringify({ success: true, data: product }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -184,9 +222,10 @@ async function createProduct(request, env, corsHeaders) {
       sizes,
       category_id,
       price,
-      quantity,
       is_featured,
       is_active,
+      variants,     // array of { color_name, size_name, quantity }
+      color_images, // array of { color_name, primary_image_url, gallery_images }
     } = await request.json();
 
     if (!name) {
@@ -210,9 +249,9 @@ async function createProduct(request, env, corsHeaders) {
 
     const result = await env.DB.prepare(
       `INSERT INTO products (
-        name, description, detailed_description, 
-        image_url, gallery_images, colors, sizes, category_id, price, quantity, is_featured, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        name, description, detailed_description,
+        image_url, gallery_images, colors, sizes, category_id, price, is_featured, is_active
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         name,
@@ -228,15 +267,35 @@ async function createProduct(request, env, corsHeaders) {
         price !== "" && price !== null && price !== undefined
           ? parseFloat(price)
           : null,
-        quantity !== "" && quantity !== null && quantity !== undefined
-          ? parseInt(quantity)
-          : null,
         is_featured ? 1 : 0,
         is_active !== false ? 1 : 0,
       )
       .run();
 
     const productId = result.meta.last_row_id;
+
+    // Save variants
+    if (Array.isArray(variants) && variants.length > 0) {
+      for (const v of variants) {
+        if (!v.color_name || !v.size_name) continue;
+        await env.DB.prepare(
+          `INSERT OR REPLACE INTO product_variants (product_id, color_name, size_name, quantity)
+           VALUES (?, ?, ?, ?)`
+        ).bind(productId, v.color_name, v.size_name, parseInt(v.quantity) || 0).run();
+      }
+    }
+
+    // Save color images
+    if (Array.isArray(color_images) && color_images.length > 0) {
+      for (const ci of color_images) {
+        if (!ci.color_name) continue;
+        const ciGallery = Array.isArray(ci.gallery_images) ? JSON.stringify(ci.gallery_images) : "[]";
+        await env.DB.prepare(
+          `INSERT OR REPLACE INTO product_color_images (product_id, color_name, primary_image_url, gallery_images)
+           VALUES (?, ?, ?, ?)`
+        ).bind(productId, ci.color_name, ci.primary_image_url || null, ciGallery).run();
+      }
+    }
 
     // Generate and save SEO slug
     try {
@@ -294,9 +353,10 @@ async function updateProduct(request, env, productId, corsHeaders) {
       sizes,
       category_id,
       price,
-      quantity,
       is_featured,
       is_active,
+      variants,
+      color_images,
     } = await request.json();
 
     if (!name) {
@@ -345,7 +405,6 @@ async function updateProduct(request, env, productId, corsHeaders) {
         sizes = ?,
         category_id = ?,
         price = ?,
-        quantity = ?,
         is_featured = ?,
         is_active = ?,
         updated_at = CURRENT_TIMESTAMP
@@ -365,14 +424,34 @@ async function updateProduct(request, env, productId, corsHeaders) {
         price !== "" && price !== null && price !== undefined
           ? parseFloat(price)
           : null,
-        quantity !== "" && quantity !== null && quantity !== undefined
-          ? parseInt(quantity)
-          : null,
         is_featured ? 1 : 0,
         is_active !== false ? 1 : 0,
         productId,
       )
       .run();
+
+    // Replace variants: delete then re-insert
+    await env.DB.prepare("DELETE FROM product_variants WHERE product_id = ?").bind(productId).run();
+    if (Array.isArray(variants) && variants.length > 0) {
+      for (const v of variants) {
+        if (!v.color_name || !v.size_name) continue;
+        await env.DB.prepare(
+          `INSERT INTO product_variants (product_id, color_name, size_name, quantity) VALUES (?, ?, ?, ?)`
+        ).bind(productId, v.color_name, v.size_name, parseInt(v.quantity) || 0).run();
+      }
+    }
+
+    // Replace color images: delete then re-insert
+    await env.DB.prepare("DELETE FROM product_color_images WHERE product_id = ?").bind(productId).run();
+    if (Array.isArray(color_images) && color_images.length > 0) {
+      for (const ci of color_images) {
+        if (!ci.color_name) continue;
+        const ciGallery = Array.isArray(ci.gallery_images) ? JSON.stringify(ci.gallery_images) : "[]";
+        await env.DB.prepare(
+          `INSERT INTO product_color_images (product_id, color_name, primary_image_url, gallery_images) VALUES (?, ?, ?, ?)`
+        ).bind(productId, ci.color_name, ci.primary_image_url || null, ciGallery).run();
+      }
+    }
 
     // Generate new slug and create 301 redirects if needed
     if (nameChanged) {
@@ -381,11 +460,9 @@ async function updateProduct(request, env, productId, corsHeaders) {
         const urlManager = new URLManager(env);
         const baseSlug = urlManager.generateSlug(name);
         const uniqueSlug = await urlManager.ensureUniqueSlug(baseSlug, productId);
-        
         if (oldSlug && oldSlug !== uniqueSlug) {
           await urlManager.createRedirect(`/products/${oldSlug}`, `/products/${uniqueSlug}`);
         }
-        
         await urlManager.saveProductSlug(productId, uniqueSlug);
       } catch (slugError) {
         console.error("Error updating SEO slug:", slugError);
