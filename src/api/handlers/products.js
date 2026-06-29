@@ -119,8 +119,23 @@ async function getFeaturedProducts(env, corsHeaders) {
 }
 
 // Get product variants and color images
-async function getProductVariants(env, productId, corsHeaders) {
+async function getProductVariants(env, productIdOrSlug, corsHeaders) {
   try {
+    const isNumericId = /^\d+$/.test(productIdOrSlug);
+    let productId = productIdOrSlug;
+
+    if (!isNumericId) {
+      try {
+        const { URLManager } = await import("../../seo/url-manager");
+        const urlManager = new URLManager(env);
+        const resolvedProduct = await urlManager.getProductBySlug(productIdOrSlug);
+        if (resolvedProduct) {
+          productId = resolvedProduct.id;
+        }
+      } catch (slugError) {
+        console.error("Error resolving slug in API getProductVariants:", slugError);
+      }
+    }
     const [variantsResult, colorImagesResult] = await Promise.all([
       env.DB.prepare("SELECT color_name, size_name, quantity FROM product_variants WHERE product_id = ? ORDER BY color_name, size_name").bind(productId).all(),
       env.DB.prepare("SELECT color_name, primary_image_url, gallery_images FROM product_color_images WHERE product_id = ? ORDER BY color_name").bind(productId).all(),
@@ -143,8 +158,24 @@ async function getProductVariants(env, productId, corsHeaders) {
 }
 
 // Get single product
-async function getProduct(env, productId, corsHeaders, request) {
+async function getProduct(env, productIdOrSlug, corsHeaders, request) {
   try {
+    const isNumericId = /^\d+$/.test(productIdOrSlug);
+    let productId = productIdOrSlug;
+
+    if (!isNumericId) {
+      try {
+        const { URLManager } = await import("../../seo/url-manager");
+        const urlManager = new URLManager(env);
+        const resolvedProduct = await urlManager.getProductBySlug(productIdOrSlug);
+        if (resolvedProduct) {
+          productId = resolvedProduct.id;
+        }
+      } catch (slugError) {
+        console.error("Error resolving slug in API getProduct:", slugError);
+      }
+    }
+
     // Check if this is an authenticated admin request
     const authHeader = request?.headers?.get("Authorization");
     const isAdmin = authHeader && authHeader.startsWith("Bearer ");

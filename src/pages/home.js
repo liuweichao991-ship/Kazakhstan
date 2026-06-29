@@ -190,16 +190,55 @@ export async function homePage(env) {
         const endIndex = startIndex + featuredItemsPerPage;
         const paginatedProducts = allFeaturedProducts.slice(startIndex, endIndex);
 
-        container.innerHTML = paginatedProducts.map(product => \`
-          <div class="card">
-            <img src="\${getImageKitUrl(product.image_url, 'w-400,h-300,cm-pad_resize,bg-F3F3F6') || '/images/placeholder.jpg'}" alt="\${product.name}" class="card-image">
-            <div class="card-content">
-              <h3 class="card-title">\${product.name}</h3>
-              <p class="card-description">\${product.description || 'No description available'}</p>
-              <a href="/products/\${product.id}" class="btn btn-primary">View Details</a>
+        container.innerHTML = paginatedProducts.map(product => {
+          const price = product.price !== null && product.price !== undefined
+            ? '$' + parseFloat(product.price).toFixed(2)
+            : 'Inquire for Price';
+            
+          return \`
+          <div class="card" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px; border: 1px solid #ddd; background: white; display: flex; flex-direction: column;">
+            <div style="position: relative;">
+              <img src="\${getImageKitUrl(product.image_url, 'w-400,h-300,cm-pad_resize,bg-FFFFFF') || '/images/placeholder.jpg'}" 
+                   alt="\${product.name}" 
+                   class="card-image" 
+                   onerror="this.src='/images/placeholder.jpg'"
+                   style="height: 180px; width: 100%; object-fit: contain; padding: 0.5rem; background: #ffffff;">
+              <span style="position: absolute; top: 8px; left: 8px; background: #232f3e; color: white; padding: 0.15rem 0.5rem; font-size: 0.68rem; font-weight: 700; border-radius: 2px; text-transform: uppercase;">
+                \${product.category_name || 'General'}
+              </span>
+            </div>
+            
+            <div class="card-content" style="padding: 0.85rem; display: flex; flex-direction: column; flex: 1;">
+              <h3 class="card-title" style="font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin: 0 0 0.25rem; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                \${product.name}
+              </h3>
+              
+              <!-- Star Rating Placeholder -->
+              <div style="display: flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; margin-bottom: 0.4rem;">
+                <span style="color: #ff9900; font-size: 0.85rem;">★★★★★</span>
+                <span style="color: #007185; font-weight: 500;">5.0</span>
+                <span style="color: var(--text-light);">(verified)</span>
+              </div>
+
+              <!-- Price section -->
+              <div style="margin-bottom: 0.6rem;">
+                <span style="font-size: 1.15rem; font-weight: 700; color: #0f1111;">\${price}</span>
+                <span style="font-size: 0.72rem; color: #565959; display: block; font-weight: 500;">Bulk Wholesale Pricing</span>
+              </div>
+
+              <!-- Verified B2B Badge -->
+              <div style="display: flex; align-items: center; gap: 0.2rem; font-size: 0.72rem; color: #007600; font-weight: 600; margin-bottom: 0.75rem;">
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" style="display: inline-block;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <span>Trade Assurance</span>
+              </div>
+
+              <div style="margin-top: auto;">
+                <a href="/products/\${product.id}" class="btn btn-secondary" style="width: 100%; border-radius: 4px; padding: 0.45rem; font-size: 0.82rem; font-weight: 600;">View Details</a>
+              </div>
             </div>
           </div>
-        \`).join('');
+          \`;
+        }).join('');
 
         // Show pagination if needed
         renderFeaturedPagination();

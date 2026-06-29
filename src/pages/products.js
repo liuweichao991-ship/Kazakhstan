@@ -91,55 +91,73 @@ export async function productsPage(env) {
   }
 
   const content = `
-    <!-- Page Header -->
-    <section class="hero" style="padding: 3rem 2rem;">
-      <div class="container">
-        <h1>Our Products</h1>
-        <p>Explore our comprehensive range of high-quality products</p>
-      </div>
-    </section>
-
     <!-- Products Section -->
-    <section class="container" style="margin-top: 2rem; margin-bottom: 3rem;">
-      <!-- Filter Bar -->
-      <div style="background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2rem;">
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-          <label style="font-weight: 500;">Category:</label>
-          <select id="category-filter" class="form-input" style="max-width: 200px;">
+    <div class="container" style="margin-top: 1.5rem; margin-bottom: 3rem; display: grid; grid-template-columns: 240px 1fr; gap: 2rem;" id="products-page-layout">
+      <!-- Left Sidebar (Filters) -->
+      <aside style="background: white; padding: 1.25rem; border-radius: 4px; border: 1px solid #ddd; height: fit-content;">
+        <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #eee;">Filters</h2>
+        
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+          <label class="form-label" style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.05em;">Search Keyword</label>
+          <div style="display: flex; gap: 0.25rem;">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Keyword..."
+              class="form-input"
+              style="padding: 0.4rem 0.6rem; font-size: 0.85rem;"
+            />
+            <button id="search-btn" class="btn btn-primary" style="padding: 0.4rem 0.8rem; border-radius: 3px; font-size: 0.85rem; box-shadow: none;">Go</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-light); letter-spacing: 0.05em; margin-bottom: 0.5rem;">Departments</label>
+          <select id="category-filter" class="form-input" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;">
             <option value="">All Categories</option>
             <!-- Categories will be loaded dynamically -->
           </select>
-          <input
-            type="text"
-            id="search-input"
-            placeholder="Search products..."
-            class="form-input"
-            style="flex: 1; min-width: 200px;"
-          />
-          <button id="search-btn" class="btn btn-primary">Search</button>
+        </div>
+
+        <div style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--text-light); line-height: 1.4;">
+          <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 0.25rem;">Supplier Profile</div>
+          <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="checkbox" checked disabled> Verified B2B Trader
+          </label>
+        </div>
+      </aside>
+
+      <!-- Right Column (Products & Title) -->
+      <div>
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h1 style="font-size: 1.3rem; font-weight: 700; margin: 0; color: var(--text-dark);">Wholesale Catalog</h1>
+            <p style="font-size: 0.82rem; color: var(--text-light); margin: 0;">Explore high-density Sino-Kazakh garments trade inventory</p>
+          </div>
+          <div style="font-size: 0.82rem; color: var(--text-light); font-weight: 600;" id="results-count">Loading results...</div>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="products-container" class="grid grid-3">
+          <div class="spinner"></div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination-container" style="display: none; margin-top: 2rem;"></div>
+
+        <!-- No Results Message -->
+        <div id="no-results" style="display: none; text-align: center; padding: 3rem; background: white; border-radius: 4px; border: 1px solid #ddd;">
+          <p style="color: var(--text-light); font-size: 1.1rem; font-weight: 500;">No products found matching your criteria.</p>
         </div>
       </div>
-
-      <!-- Products Grid -->
-      <div id="products-container" class="grid grid-3">
-        <div class="spinner"></div>
-      </div>
-
-      <!-- Pagination -->
-      <div id="pagination-container" style="display: none; margin-top: 2rem;"></div>
-
-      <!-- No Results Message -->
-      <div id="no-results" style="display: none; text-align: center; padding: 3rem;">
-        <p style="color: var(--text-light); font-size: 1.2rem;">No products found matching your criteria.</p>
-      </div>
-    </section>
+    </div>
   `;
 
   const scripts = `
     <script>
       let allProducts = [];
       let currentPage = 1;
-      const itemsPerPage = 8;
+      const itemsPerPage = 9; // Display in perfect multiples of 3 (Amazon grid)
 
       // Load categories dynamically
       function loadCategories(products) {
@@ -161,8 +179,26 @@ export async function productsPage(env) {
           const response = await API.get('/products');
           allProducts = response.data || [];
           loadCategories(allProducts);
+          
+          // Parse query string parameters for search integration
+          const urlParams = new URLSearchParams(window.location.search);
+          const q = urlParams.get('q') || '';
+          const category = urlParams.get('category') || '';
+          
+          if (q) {
+            document.getElementById('search-input').value = q;
+          }
+          if (category) {
+            document.getElementById('category-filter').value = category;
+          }
+          
           currentPage = 1;
-          displayProducts(allProducts);
+          
+          if (q || category) {
+            filterProducts();
+          } else {
+            displayProducts(allProducts);
+          }
         } catch (error) {
           console.error('Error loading products:', error);
           document.getElementById('products-container').innerHTML =
@@ -185,21 +221,21 @@ export async function productsPage(env) {
         
         // Previous button
         if (currentPage > 1) {
-          html += '<button onclick="goToPage(' + (currentPage - 1) + ')" class="btn btn-primary" style="padding: 0.5rem 1rem;">← Previous</button>';
+          html += '<button onclick="goToPage(' + (currentPage - 1) + ')" class="btn btn-primary" style="padding: 0.5rem 1rem; border-radius: 4px;">← Previous</button>';
         }
         
         // Page numbers
         for (let i = 1; i <= totalPages; i++) {
           if (i === currentPage) {
-            html += '<button style="padding: 0.5rem 1rem; background: var(--primary-color); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 600;">' + i + '</button>';
+            html += '<button style="padding: 0.5rem 1rem; background: var(--bg-menu); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">' + i + '</button>';
           } else {
-            html += '<button onclick="goToPage(' + i + ')" style="padding: 0.5rem 1rem; background: #e5e7eb; color: var(--text-dark); border: none; border-radius: 0.375rem; cursor: pointer;">' + i + '</button>';
+            html += '<button onclick="goToPage(' + i + ')" style="padding: 0.5rem 1rem; background: #e5e7eb; color: var(--text-dark); border: none; border-radius: 4px; cursor: pointer;">' + i + '</button>';
           }
         }
         
         // Next button
         if (currentPage < totalPages) {
-          html += '<button onclick="goToPage(' + (currentPage + 1) + ')" class="btn btn-primary" style="padding: 0.5rem 1rem;">Next →</button>';
+          html += '<button onclick="goToPage(' + (currentPage + 1) + ')" class="btn btn-primary" style="padding: 0.5rem 1rem; border-radius: 4px;">Next →</button>';
         }
         
         html += '</div>';
@@ -229,11 +265,13 @@ export async function productsPage(env) {
       function displayProducts(products) {
         const container = document.getElementById('products-container');
         const noResults = document.getElementById('no-results');
+        const resultsCountEl = document.getElementById('results-count');
 
         if (products.length === 0) {
           container.innerHTML = '';
           noResults.style.display = 'block';
           document.getElementById('pagination-container').style.display = 'none';
+          if (resultsCountEl) resultsCountEl.textContent = '0 results';
           return;
         }
 
@@ -244,24 +282,59 @@ export async function productsPage(env) {
         const endIndex = startIndex + itemsPerPage;
         const paginatedProducts = products.slice(startIndex, endIndex);
 
-        container.innerHTML = paginatedProducts.map(product => \`
-          <div class="card">
-            <img src="\${getImageKitUrl(product.image_url, 'w-400,h-300,cm-pad_resize,bg-F3F3F6') || 'https://via.placeholder.com/400x300?text=No+Image'}" 
-                 alt="\${product.name}" 
-                 class="card-image" 
-                 onerror="this.src='https://via.placeholder.com/400x300?text=Image+Not+Found'">
-            <div class="card-content">
-              <div style="margin-bottom: 0.5rem;">
-                <span style="background: var(--primary-color); color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.85rem;">
-                  \${product.category_name || 'General'}
-                </span>
+        if (resultsCountEl) {
+          resultsCountEl.textContent = 'Showing ' + (startIndex + 1) + '-' + Math.min(endIndex, products.length) + ' of ' + products.length + ' results';
+        }
+
+        container.innerHTML = paginatedProducts.map(product => {
+          const price = product.price !== null && product.price !== undefined
+            ? '$' + parseFloat(product.price).toFixed(2)
+            : 'Inquire for Price';
+            
+          return \`
+          <div class="card" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px; border: 1px solid #ddd; background: white; display: flex; flex-direction: column;">
+            <div style="position: relative;">
+              <img src="\${getImageKitUrl(product.image_url, 'w-400,h-300,cm-pad_resize,bg-FFFFFF') || 'https://via.placeholder.com/400x300?text=No+Image'}" 
+                   alt="\${product.name}" 
+                   class="card-image" 
+                   onerror="this.src='https://via.placeholder.com/400x300?text=Image+Not+Found'"
+                   style="height: 180px; width: 100%; object-fit: contain; padding: 0.5rem; background: #ffffff;">
+              <span style="position: absolute; top: 8px; left: 8px; background: #232f3e; color: white; padding: 0.15rem 0.5rem; font-size: 0.68rem; font-weight: 700; border-radius: 2px; text-transform: uppercase;">
+                \${product.category_name || 'General'}
+              </span>
+            </div>
+            
+            <div class="card-content" style="padding: 0.85rem; display: flex; flex-direction: column; flex: 1;">
+              <h3 class="card-title" style="font-size: 0.95rem; font-weight: 600; line-height: 1.3; margin: 0 0 0.25rem; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                \${product.name}
+              </h3>
+              
+              <!-- Star Rating Placeholder -->
+              <div style="display: flex; align-items: center; gap: 0.2rem; font-size: 0.75rem; margin-bottom: 0.4rem;">
+                <span style="color: #ff9900; font-size: 0.85rem;">★★★★★</span>
+                <span style="color: #007185; font-weight: 500;">5.0</span>
+                <span style="color: var(--text-light);">(verified)</span>
               </div>
-              <h3 class="card-title">\${product.name}</h3>
-              <p class="card-description">\${product.description || 'No description available'}</p>
-              <a href="/products/\${product.id}" class="btn btn-primary">View Details</a>
+
+              <!-- Price section -->
+              <div style="margin-bottom: 0.6rem;">
+                <span style="font-size: 1.15rem; font-weight: 700; color: #0f1111;">\${price}</span>
+                <span style="font-size: 0.72rem; color: #565959; display: block; font-weight: 500;">Bulk Wholesale Pricing</span>
+              </div>
+
+              <!-- Verified B2B Badge -->
+              <div style="display: flex; align-items: center; gap: 0.2rem; font-size: 0.72rem; color: #007600; font-weight: 600; margin-bottom: 0.75rem;">
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" style="display: inline-block;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <span>Trade Assurance</span>
+              </div>
+
+              <div style="margin-top: auto;">
+                <a href="/products/\${product.id}" class="btn btn-secondary" style="width: 100%; border-radius: 4px; padding: 0.45rem; font-size: 0.82rem; font-weight: 600;">View Details</a>
+              </div>
             </div>
           </div>
-        \`).join('');
+          \`;
+        }).join('');
 
         // Show pagination if needed
         renderPagination(products.length);
@@ -300,19 +373,17 @@ export async function productsPage(env) {
       // Load products on page load
       loadProducts();
 
-      // Add styles for product card description - limit to 3 lines
-      const descriptionStyle = document.createElement('style');
-      descriptionStyle.textContent = \`
-        .card-description {
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          line-height: 1.5;
+      // Add styles for layout responsive and card grid
+      const productsStyle = document.createElement('style');
+      productsStyle.textContent = \`
+        @media (max-width: 768px) {
+          #products-page-layout {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
         }
       \`;
-      document.head.appendChild(descriptionStyle);
+      document.head.appendChild(productsStyle);
     </script>
   `;
 
