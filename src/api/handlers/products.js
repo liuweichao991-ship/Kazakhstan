@@ -103,7 +103,7 @@ async function getFeaturedProducts(env, corsHeaders) {
       FROM products p 
       LEFT JOIN categories c ON p.category_id = c.id 
       WHERE p.is_featured = 1 AND p.is_active = 1 
-      LIMIT 6
+      ORDER BY p.created_at DESC
     `,
     ).all();
 
