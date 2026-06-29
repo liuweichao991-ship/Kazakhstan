@@ -35,13 +35,17 @@ export function createLayout(
     /* Main Stylesheet for B2B Website */
 
     :root {
-      --primary-color: #2563eb;
-      --secondary-color: #1e40af;
-      --accent-color: #f59e0b;
-      --text-dark: #1f2937;
-      --text-light: #6b7280;
-      --bg-light: #f9fafb;
-      --border-color: #e5e7eb;
+      --primary-color: #ffd814;
+      --primary-hover: #f7ca00;
+      --secondary-color: #ffa41c;
+      --secondary-hover: #e8910d;
+      --accent-color: #febd69;
+      --bg-dark: #131921;
+      --bg-menu: #232f3e;
+      --bg-light: #eaeded;
+      --border-color: #ddd;
+      --text-dark: #0f1111;
+      --text-light: #565959;
     }
 
     * {
@@ -51,166 +55,274 @@ export function createLayout(
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      line-height: 1.5;
       color: var(--text-dark);
-      background: #ffffff;
+      background: var(--bg-light);
     }
 
     /* Navigation */
     .navbar {
-      background: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: var(--bg-dark);
       position: sticky;
       top: 0;
       z-index: 1000;
     }
 
     .nav-container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 1rem 2rem;
+      padding: 0.75rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 1rem;
     }
 
     .logo {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: var(--primary-color);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #ffffff;
       text-decoration: none;
-    }
-
-    .nav-menu {
       display: flex;
-      list-style: none;
-      gap: 2rem;
+      align-items: center;
+      letter-spacing: -0.03em;
+    }
+    
+    .logo span {
+      color: var(--secondary-color);
     }
 
-    .nav-link {
-      text-decoration: none;
-      color: var(--text-dark);
+    /* Unified Search Bar styling */
+    .nav-search-form {
+      display: flex;
+      flex: 1;
+      max-width: 750px;
+      height: 40px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      transition: box-shadow 0.15s;
+    }
+    
+    .nav-search-form:focus-within {
+      box-shadow: 0 0 0 2px #e77600;
+    }
+
+    .nav-search-category {
+      background: #f3f3f3;
+      border: none;
+      border-right: 1px solid #ddd;
+      padding: 0 1rem;
+      font-size: 0.82rem;
       font-weight: 500;
-      transition: color 0.3s;
-    }
-
-    .nav-link:hover,
-    .nav-link.active {
-      color: var(--primary-color);
-    }
-
-    /* Mobile Menu Toggle */
-    .menu-toggle {
-      display: none;
-      flex-direction: column;
       cursor: pointer;
+      outline: none;
+      color: #555;
+      max-width: 150px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    
+    .nav-search-category:hover {
+      background: #dadada;
+      color: #111;
     }
 
-    .menu-toggle span {
-      width: 25px;
-      height: 3px;
-      background: var(--text-dark);
-      margin: 3px 0;
-      transition: 0.3s;
+    .nav-search-input {
+      flex: 1;
+      border: none;
+      padding: 0 0.8rem;
+      font-size: 0.95rem;
+      outline: none;
+      color: var(--text-dark);
+      font-family: inherit;
+    }
+
+    .nav-search-submit {
+      background: var(--accent-color);
+      border: none;
+      width: 45px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: background 0.15s;
+    }
+    
+    .nav-search-submit:hover {
+      background: #f3a847;
+    }
+
+    .nav-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      color: white;
+      font-size: 0.85rem;
+    }
+    
+    .nav-badge-box {
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.25rem 0.5rem;
+      border-radius: 3px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.05);
+      color: var(--accent-color);
+    }
+
+    .subnav {
+      background: var(--bg-menu);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .subnav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0.45rem 2rem;
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+      list-style: none;
+    }
+    
+    .subnav-link {
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    
+    .subnav-link:hover,
+    .subnav-link.active {
+      color: var(--accent-color);
     }
 
     /* Container */
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 1.5rem 2rem;
     }
 
     /* Hero Section */
     .hero {
-      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      background: linear-gradient(180deg, rgba(234,237,237,0) 0%, rgba(234,237,237,1) 100%), 
+                  linear-gradient(135deg, #232f3e, #131921);
       color: white;
-      padding: 4rem 2rem;
+      padding: 3rem 2rem 5rem;
       text-align: center;
+      position: relative;
     }
 
     .hero h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
     }
 
     .hero p {
-      font-size: 1.2rem;
-      max-width: 600px;
+      font-size: 1.1rem;
+      max-width: 650px;
       margin: 0 auto;
+      color: #d1d5db;
     }
 
     /* Buttons */
     .btn {
       display: inline-block;
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.375rem;
+      padding: 0.55rem 1.25rem;
+      border-radius: 100px;
       text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s;
-      border: none;
+      font-weight: 500;
+      transition: all 0.2s ease-in-out;
+      border: 1px solid;
       cursor: pointer;
+      text-align: center;
+      font-size: 0.88rem;
+      box-shadow: 0 2px 5px rgba(213,217,217,.5);
     }
 
     .btn-primary {
-      background: var(--primary-color);
-      color: white;
+      background: #ffd814;
+      border-color: #fcd200;
+      color: #0f1111;
     }
 
     .btn-primary:hover {
-      background: var(--secondary-color);
+      background: #f7ca00;
+      border-color: #f2c200;
     }
 
     .btn-secondary {
-      background: var(--accent-color);
-      color: white;
+      background: #ffa41c;
+      border-color: #ff9900;
+      color: #0f1111;
     }
 
     .btn-secondary:hover {
-      background: #d97706;
+      background: #e8910d;
+      border-color: #e08700;
     }
 
     /* Cards */
     .card {
       background: white;
-      border-radius: 0.5rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      border-radius: 4px;
+      border: 1px solid #ddd;
       overflow: hidden;
-      transition: transform 0.3s;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
 
     .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 15px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #ccc;
     }
 
     .card-image {
       width: 100%;
-      height: 200px;
+      height: 180px;
       object-fit: contain;
-      background: #f3f4f6;
+      background: #ffffff;
+      padding: 0.5rem;
+      border-bottom: 1px solid #eee;
     }
 
     .card-content {
-      padding: 1.5rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
     }
 
     .card-title {
-      font-size: 1.25rem;
+      font-size: 1rem;
       font-weight: 600;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
+      color: #0f1111;
+      line-height: 1.35;
     }
 
     .card-description {
       color: var(--text-light);
-      margin-bottom: 1rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.8rem;
+      flex: 1;
     }
 
     /* Grid Layout */
     .grid {
       display: grid;
-      gap: 2rem;
+      gap: 1.5rem;
     }
 
     .grid-2 {
@@ -219,49 +331,44 @@ export function createLayout(
     }
 
     .grid-3 {
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
       max-width: 100%;
     }
 
     /* Limit card max width when there are few items */
     .grid > .card {
-      max-width: 450px;
-      justify-self: center;
+      max-width: none;
       width: 100%;
-    }
-
-    @media (min-width: 768px) {
-      .grid > .card {
-        max-width: 400px;
-        justify-self: stretch;
-      }
     }
 
     /* Form Styles */
     .form-group {
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.2rem;
     }
 
     .form-label {
       display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--text-dark);
     }
 
     .form-input,
     .form-textarea {
       width: 100%;
-      padding: 0.75rem;
-      border: 1px solid var(--border-color);
-      border-radius: 0.375rem;
-      font-size: 1rem;
-      transition: border-color 0.3s;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #a6a9a9;
+      border-radius: 3px;
+      font-size: 0.9rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
     .form-input:focus,
     .form-textarea:focus {
       outline: none;
-      border-color: var(--primary-color);
+      border-color: #e77600;
+      box-shadow: 0 0 3px rgba(228,121,17,0.5);
     }
 
     .form-textarea {
@@ -271,37 +378,62 @@ export function createLayout(
 
     /* Footer */
     .footer {
-      background: var(--text-dark);
+      background: #232f3e;
       color: white;
-      padding: 3rem 2rem 1rem;
+      padding: 0;
       margin-top: 4rem;
+    }
+    
+    .footer-back-to-top {
+      background: #37475a;
+      color: white;
+      text-align: center;
+      padding: 0.9rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      transition: background 0.15s;
+    }
+    
+    .footer-back-to-top:hover {
+      background: #485769;
     }
 
     .footer-content {
       max-width: 1200px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2.5rem;
+      padding: 3rem 2rem;
     }
 
     .footer-section h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
       margin-bottom: 1rem;
-      color: var(--accent-color);
+      color: #ffffff;
     }
 
     .footer-section ul {
       list-style: none;
     }
+    
+    .footer-section ul li {
+      margin-bottom: 0.5rem;
+    }
 
     .footer-section a {
-      color: #9ca3af;
+      color: #ddd;
       text-decoration: none;
-      transition: color 0.3s;
+      font-size: 0.82rem;
+      transition: text-decoration 0.15s;
     }
 
     .footer-section a:hover {
       color: white;
+      text-decoration: underline;
     }
 
     /* Footer quotes */
@@ -324,7 +456,7 @@ export function createLayout(
       transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
       font-style: italic;
       color: #d1d5db;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       line-height: 1.6;
     }
     .quote-item.active {
@@ -344,37 +476,40 @@ export function createLayout(
 
     .footer-bottom {
       text-align: center;
-      padding-top: 2rem;
-      margin-top: 2rem;
-      border-top: 1px solid #374151;
+      padding: 2rem;
+      background: #131a22;
       color: #9ca3af;
+      font-size: 0.8rem;
+      border-top: 1px solid #19222d;
     }
 
     /* Responsive Design */
     @media (max-width: 768px) {
-      .nav-menu {
-        position: fixed;
-        left: -100%;
-        top: 70px;
+      .nav-container {
         flex-direction: column;
-        background-color: white;
-        width: 100%;
-        text-align: center;
-        transition: 0.3s;
-        box-shadow: 0 10px 27px rgba(0,0,0,0.1);
-        padding: 2rem 0;
+        align-items: stretch;
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
       }
-
-      .nav-menu.active {
-        left: 0;
+      
+      .logo {
+        justify-content: center;
       }
-
-      .menu-toggle {
-        display: flex;
+      
+      .nav-search-form {
+        max-width: none;
+        order: 3;
       }
-
-      .hero h1 {
-        font-size: 2rem;
+      
+      .nav-right-actions {
+        justify-content: center;
+      }
+      
+      .subnav-container {
+        padding: 0.5rem 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
       }
 
       .grid-2,
@@ -439,7 +574,7 @@ export function createLayout(
 
       // Set active nav link based on current page
       const currentPath = window.location.pathname;
-      const navLinks = document.querySelectorAll('.nav-link');
+      const navLinks = document.querySelectorAll('.nav-link, .subnav-link');
 
       navLinks.forEach(link => {
         if (link.getAttribute('href') === currentPath) {
@@ -1022,12 +1157,30 @@ export function createLayout(
 
   <script>
     (function() {
+      const POLL_INTERVAL = 3000;
+      let chatSessionId = sessionStorage.getItem('chat_session_id');
+      let chatVisitorName = sessionStorage.getItem('chat_visitor_name');
+      let lastMsgId = parseInt(sessionStorage.getItem('chat_last_msg_id') || '0', 10);
+      let pollTimer = null;
+      let unreadCount = 0;
+      let panelOpen = false;
+      let sessionReady = false;
+      let widgetMode = 'live_chat';
+
       // STATE ISOLATION GUARD: toggleContactFormPanel() only manipulates the
       // #contact-form-panel DOM element and the bubble icon. It does NOT read
       // from or write to any live chat IIFE variables (chatSessionId,
       // lastMsgId, pollTimer, panelOpen, sessionReady, unreadCount,
       // chatVisitorName).
+      // When widgetMode is 'live_chat', "Send Inquiry" should open the chat
+      // panel instead of the (hidden) contact form panel.
       function toggleContactFormPanel() {
+        if (widgetMode === 'live_chat') {
+          // In live chat mode, open the chat panel instead
+          window.toggleChatPanel();
+          return;
+        }
+
         const cfpPanel = document.getElementById('contact-form-panel');
         if (!cfpPanel) return;
 
@@ -1050,16 +1203,6 @@ export function createLayout(
       // Expose toggleContactFormPanel IMMEDIATELY at the start of the IIFE
       // to ensure it's accessible when product-detail.js "Send Inquiry" button is clicked
       window.toggleContactFormPanel = toggleContactFormPanel;
-
-      const POLL_INTERVAL = 3000;
-      let chatSessionId = sessionStorage.getItem('chat_session_id');
-      let chatVisitorName = sessionStorage.getItem('chat_visitor_name');
-      let lastMsgId = parseInt(sessionStorage.getItem('chat_last_msg_id') || '0', 10);
-      let pollTimer = null;
-      let unreadCount = 0;
-      let panelOpen = false;
-      let sessionReady = false;
-      let widgetMode = 'live_chat';
 
       function generateId() {
         return crypto.randomUUID
@@ -1386,20 +1529,37 @@ function createNavbar() {
   return `
   <nav class="navbar">
     <div class="nav-container">
-      <a href="/" class="logo">GlobalMart</a>
-      <div class="menu-toggle">
-        <span></span>
-        <span></span>
-        <span></span>
+      <a href="/" class="logo">GlobalMart<span>.kz</span></a>
+      
+      <!-- Unified Search Bar -->
+      <form class="nav-search-form" action="/products" method="GET" onsubmit="event.preventDefault(); window.location.href='/products?q=' + encodeURIComponent(this.querySelector('.nav-search-input').value) + '&category=' + encodeURIComponent(this.querySelector('.nav-search-category').value);">
+        <select class="nav-search-category" name="category">
+          <option value="">All Departments</option>
+          <option value="Industrial">Industrial</option>
+          <option value="Technology">Technology</option>
+          <option value="Equipment">Equipment</option>
+        </select>
+        <input class="nav-search-input" type="text" name="q" placeholder="Search for wholesale garments, fabrics, yarn..." autocomplete="off">
+        <button class="nav-search-submit" type="submit" aria-label="Search">🔍</button>
+      </form>
+      
+      <div class="nav-right-actions">
+        <div style="text-align: right; line-height: 1.2;">
+          <div style="font-size: 0.72rem; opacity: 0.8; font-weight: 500; color: #aaa;">B2B Wholesale</div>
+          <div style="font-weight: 700; font-size: 0.88rem; color: #fff;">Kazakhstan Hub</div>
+        </div>
+        <div class="nav-badge-box">Verified Trade</div>
       </div>
-      <ul class="nav-menu">
-        <li><a href="/" class="nav-link">Home</a></li>
-        <li><a href="/products" class="nav-link">Products</a></li>
-        <li><a href="/about" class="nav-link">About</a></li>
-        <li><a href="/contact" class="nav-link">Contact</a></li>
-      </ul>
     </div>
-  </nav>`;
+  </nav>
+  <div class="subnav">
+    <ul class="subnav-container">
+      <li><a href="/" class="subnav-link">Home</a></li>
+      <li><a href="/products" class="subnav-link">Products</a></li>
+      <li><a href="/about" class="subnav-link">About Us</a></li>
+      <li><a href="/contact" class="subnav-link">Contact</a></li>
+    </ul>
+  </div>`;
 }
 
 function createFooter(settings = null) {
@@ -1412,6 +1572,7 @@ function createFooter(settings = null) {
 
   return `
   <footer class="footer">
+    <a href="#" class="footer-back-to-top" onclick="window.scrollTo({top:0, behavior:'smooth'}); return false;">Back to top</a>
     <div class="footer-content">
       <div class="footer-section footer-links">
         <h3>Quick Links</h3>

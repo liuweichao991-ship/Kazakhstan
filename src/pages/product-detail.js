@@ -59,6 +59,8 @@ export async function productDetailPage(request, env) {
       console.error("Error loading product by slug for SEO:", error);
     }
   }
+  
+  console.log("SERVER SIDE PRODUCT loaded:", product ? { id: product.id, name: product.name } : null);
 
   // Load product info from database for SEO
   let pageTitle = "Product Details";
@@ -365,56 +367,146 @@ export async function productDetailPage(request, env) {
 
           // Render page
           document.getElementById('product-detail').innerHTML =
-            '<div style="margin-bottom:2rem;">'
-              + '<a href="/" style="color:var(--text-light);text-decoration:none;">Home</a>'
-              + '<span style="color:var(--text-light);"> / </span>'
-              + '<a href="/products" style="color:var(--text-light);text-decoration:none;">Products</a>'
-              + '<span style="color:var(--text-light);"> / </span>'
-              + '<span style="color:var(--primary-color);">' + product.name + '</span>'
+            '<div style="margin-bottom:1.5rem; font-size:0.82rem; color: #565959;">'
+              + '<a href="/" style="color:#007185;text-decoration:none;font-weight:500;">Home</a>'
+              + '<span style="margin: 0 0.35rem;">&rsaquo;</span>'
+              + '<a href="/products" style="color:#007185;text-decoration:none;font-weight:500;">Products</a>'
+              + '<span style="margin: 0 0.35rem;">&rsaquo;</span>'
+              + '<span style="color:#565959;">' + (product.category_name || 'General') + '</span>'
             + '</div>'
-            + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-bottom:3rem;" id="product-grid">'
-              + '<div id="gallery-container" style="display:flex;gap:0.75rem;">'
+            + '<div style="display:grid;grid-template-columns: 40% 35% 25%;gap:1.5rem;margin-bottom:3rem;" id="product-grid">'
+              + '<div id="gallery-container" style="display:flex;gap:0.75rem;flex-direction:row;">'
                 + buildThumbsHtml(baseMedia)
                 + '<div id="main-media-wrap" style="flex:1;min-width:0;">' + buildMainHtml(baseMedia) + '</div>'
               + '</div>'
-              + '<div>'
-                + '<div style="margin-bottom:1rem;"><span style="background:var(--primary-color);color:white;padding:0.25rem 0.75rem;border-radius:1rem;font-size:0.85rem;">' + (product.category_name || 'General') + '</span></div>'
-                + '<h1 style="font-size:2rem;margin-bottom:1rem;color:var(--text-dark);">' + product.name + '</h1>'
-                + '<p style="color:var(--text-light);font-size:1.1rem;line-height:1.8;margin-bottom:1.5rem;">' + (product.description || 'No description available') + '</p>'
-                + priceSectionHtml
+              + '<div style="padding: 0 0.5rem;">'
+                + '<div style="margin-bottom:0.5rem;"><span style="background:#232f3e;color:white;padding:0.25rem 0.6rem;border-radius:2px;font-size:0.75rem;font-weight:700;text-transform:uppercase;">' + (product.category_name || 'General') + '</span></div>'
+                + '<h1 style="font-size:1.6rem;font-weight:700;color:#0f1111;line-height:1.3;margin-bottom:0.5rem;">' + product.name + '</h1>'
+                
+                + '<!-- Star Rating Placeholder -->'
+                + '<div style="display:flex;align-items:center;gap:0.3rem;font-size:0.82rem;margin-bottom:0.75rem;">'
+                  + '<span style="color:#ff9900;font-size:0.95rem;">★★★★★</span>'
+                  + '<span style="color:#007185;font-weight:500;">5.0 Supplier Rating</span>'
+                  + '<span style="color:#565959;">(Trade Assurance verified)</span>'
+                + '</div>'
+                
+                + '<hr style="border:none;border-top:1px solid #ddd;margin:0.75rem 0;">'
+                
+                + '<!-- Price Section -->'
+                + '<div style="margin-bottom:1rem;">'
+                  + '<div style="font-size:0.8rem;color:#565959;margin-bottom:0.25rem;">Bulk Wholesale Price:</div>'
+                  + '<div style="display:flex;align-items:baseline;gap:0.3rem;">'
+                    + '<span style="font-size:1.6rem;font-weight:700;color:#b12704;">' + (product.price !== null && product.price !== undefined ? '$' + parseFloat(product.price).toFixed(2) : 'Inquire') + '</span>'
+                    + '<span style="font-size:0.8rem;color:#565959;font-weight:500;">/ piece</span>'
+                  + '</div>'
+                  + '<div style="font-size:0.75rem;color:#007600;font-weight:600;margin-top:0.2rem;">✓ Bulk volume discount available</div>'
+                + '</div>'
+                
+                + '<hr style="border:none;border-top:1px solid #ddd;margin:0.75rem 0;">'
+                
                 + colorsHtml
                 + sizesHtml
-                + '<button id="send-inquiry-btn" class="btn btn-primary" style="font-size:1.1rem;padding:1rem 2rem;">Send Inquiry</button>'
+                
+                + '<!-- Product Highlights -->'
+                + '<div style="margin-top:1.25rem;">'
+                  + '<h3 style="font-size:0.88rem;font-weight:700;color:#0f1111;margin-bottom:0.5rem;">Product Highlights:</h3>'
+                  + '<ul style="padding-left:1.2rem;font-size:0.82rem;color:#333;line-height:1.5;margin:0;list-style:disc;">'
+                    + '<li>Premium material quality optimized for textile trade markets.</li>'
+                    + '<li>Certified under strict Sino-Kazakh customs inspection standards.</li>'
+                    + '<li>Reliable shipping corridors supporting quick delivery to Central Asia.</li>'
+                    + '<li>Exhibition level quality control with direct factory support.</li>'
+                  + '</ul>'
+                + '</div>'
+              + '</div>'
+              
+              + '<!-- Sticky Inquiry/Buy Box -->'
+              + '<div>'
+                + '<div style="background:white;border:1px solid #ddd;border-radius:8px;padding:1.25rem;position:sticky;top:100px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">'
+                  + '<div style="font-size:1.35rem;font-weight:700;color:#0f1111;margin-bottom:0.4rem;">' 
+                    + (product.price !== null && product.price !== undefined ? '$' + parseFloat(product.price).toFixed(2) : 'Request Quote') 
+                  + '</div>'
+                  
+                  + '<div style="font-size:0.8rem;color:#565959;margin-bottom:0.75rem;line-height:1.45;">'
+                    + 'Shipping options available for: <span style="font-weight:600;color:#0f1111;">Kazakhstan & Central Asia</span>'
+                  + '</div>'
+                  
+                  + '<div style="margin-bottom:1rem;">'
+                    + '<span style="display:inline-block;padding:0.2rem 0.5rem;background:#e6f4ea;color:#137333;border-radius:2px;font-size:0.72rem;font-weight:700;text-transform:uppercase;">In Stock</span>'
+                    + '<div id="size-qty-display" style="margin-top:0.4rem;min-height:1.2rem;font-size:0.8rem;font-weight:600;color:#16a34a;"></div>'
+                  + '</div>'
+                  
+                  + '<div style="margin-bottom:1.25rem;font-size:0.78rem;line-height:1.4;color:#565959;background:#fdfaf2;border:1px solid #f5ecdb;padding:0.5rem;border-radius:4px;">'
+                    + '<span style="font-weight:700;color:#c45500;">Trade Assurance:</span> Payments, quality, and delivery schedules are completely secured.'
+                  + '</div>'
+                  
+                  + '<button id="send-inquiry-btn" class="btn btn-secondary" style="width: 100%; border-radius: 100px; padding: 0.6rem 0.5rem; font-weight: 600; font-size: 0.9rem; box-shadow: 0 2px 5px rgba(213,217,217,.5); background:#ffa41c; border-color:#ff9900; color:#0f1111;">Send Inquiry</button>'
+                  
+                  + '<div style="margin-top:1rem;border-top:1px solid #eee;padding-top:0.75rem;font-size:0.75rem;color:#565959;line-height:1.45;">'
+                    + '<div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">'
+                      + '<span>Ships from</span>'
+                      + '<span style="color:#0f1111;font-weight:500;">Exhibition Center</span>'
+                    + '</div>'
+                    + '<div style="display:flex;justify-content:space-between;">'
+                      + '<span>Sold by</span>'
+                      + '<span style="color:#007185;font-weight:600;">GlobalMart B2B</span>'
+                    + '</div>'
+                  + '</div>'
+                + '</div>'
               + '</div>'
             + '</div>'
-            + '<div style="background:var(--bg-light);padding:2rem;border-radius:0.5rem;margin-bottom:2rem;">'
-              + '<h2 style="font-size:1.5rem;margin-bottom:1rem;color:var(--primary-color);">Product Description</h2>'
-              + (function() {
-                  var mdText = product.detailed_description || '';
-                  if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
-                    try {
-                      var safeHtml = renderMarkdown(mdText);
-                      if (safeHtml) return '<div class="md-body">' + safeHtml + '</div>';
-                      return '<p>No detailed description available</p>';
-                    } catch (_e) {
-                      return '<p style="color:var(--text-dark);line-height:1.8;white-space:pre-line;">' + mdText + '</p>';
+            
+            + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem;" id="specs-desc-section">'
+              + '<div style="background:white;padding:1.5rem;border-radius:4px;border:1px solid #ddd;box-shadow:0 1px 3px rgba(0,0,0,0.05);">'
+                + '<h2 style="font-size:1.15rem;margin-bottom:1rem;color:#0f1111;border-bottom:1px solid #eee;padding-bottom:0.5rem;">Product Description</h2>'
+                + (function() {
+                    var mdText = product.detailed_description || '';
+                    if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+                      try {
+                        var safeHtml = renderMarkdown(mdText);
+                        if (safeHtml) return '<div class="md-body">' + safeHtml + '</div>';
+                        return '<p>No detailed description available</p>';
+                      } catch (_e) {
+                        return '<p style="color:var(--text-dark);line-height:1.8;white-space:pre-line;">' + mdText + '</p>';
+                      }
                     }
-                  }
-                  return '<p style="color:var(--text-dark);line-height:1.8;white-space:pre-line;">' + (mdText || product.description || 'No detailed description available') + '</p>';
-                })()
+                    return '<p style="color:var(--text-dark);line-height:1.8;white-space:pre-line;">' + (mdText || product.description || 'No detailed description available') + '</p>';
+                  })()
+              + '</div>'
+              
+              + '<div style="background:white;padding:1.5rem;border-radius:4px;border:1px solid #ddd;box-shadow:0 1px 3px rgba(0,0,0,0.05);height:fit-content;">'
+                + '<h2 style="font-size:1.15rem;margin-bottom:1rem;color:#0f1111;border-bottom:1px solid #eee;padding-bottom:0.5rem;">Technical Specifications</h2>'
+                + (function() {
+                    if (!product.specifications || product.specifications.trim() === '') {
+                      return '<p style="color:#565959;font-size:0.85rem;">No technical specifications available.</p>';
+                    }
+                    var lines = product.specifications.split('\\n');
+                    var h = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem;line-height:1.4;"><tbody>';
+                    lines.forEach(function(l) {
+                      if (!l || !l.includes(':')) return;
+                      var parts = l.split(':');
+                      var name = parts[0].trim();
+                      var val = parts.slice(1).join(':').trim();
+                      h += '<tr style="border-bottom:1px solid #eee;">'
+                        + '<td style="padding:0.55rem 0.5rem;font-weight:600;color:#565959;width:40%;background:#fafafa;">' + name + '</td>'
+                        + '<td style="padding:0.55rem 0.5rem;color:#0f1111;">' + val + '</td>'
+                        + '</tr>';
+                    });
+                    return h + '</tbody></table>';
+                  })()
+              + '</div>'
             + '</div>';
-
+ 
           // Interaction state
           var currentColor = hasVariants ? Object.keys(variantMap)[0] : null;
           var currentSize = null;
-
+ 
           window.selectColor = function(color) {
             currentColor = color; currentSize = null;
             document.querySelectorAll('#color-selector button').forEach(function(btn) {
               var active = btn.getAttribute('data-color') === color;
-              btn.style.border = active ? '2px solid var(--primary-color)' : '1px solid #d1d5db';
-              btn.style.background = active ? '#eff6ff' : '#f9fafb';
-              btn.style.color = active ? 'var(--primary-color)' : 'var(--text-dark)';
+              btn.style.border = active ? '2px solid #e77600' : '1px solid #d1d5db';
+              btn.style.background = active ? '#fffcf5' : '#f9fafb';
+              btn.style.color = active ? '#e77600' : 'var(--text-dark)';
             });
             document.querySelectorAll('#size-selector button').forEach(function(btn) {
               btn.style.border = '1px solid #d1d5db'; btn.style.background = '#f9fafb'; btn.style.color = 'var(--text-dark)';
@@ -427,14 +519,14 @@ export async function productDetailPage(request, env) {
             if (!mediaArr.length) mediaArr = baseMedia.slice();
             renderGallery(mediaArr);
           };
-
+ 
           window.selectSize = function(size) {
             currentSize = size;
             document.querySelectorAll('#size-selector button').forEach(function(btn) {
               var active = btn.getAttribute('data-size') === size;
-              btn.style.border = active ? '2px solid var(--primary-color)' : '1px solid #d1d5db';
-              btn.style.background = active ? '#eff6ff' : '#f9fafb';
-              btn.style.color = active ? 'var(--primary-color)' : 'var(--text-dark)';
+              btn.style.border = active ? '2px solid #e77600' : '1px solid #d1d5db';
+              btn.style.background = active ? '#fffcf5' : '#f9fafb';
+              btn.style.color = active ? '#e77600' : 'var(--text-dark)';
             });
             var el = document.getElementById('size-qty-display');
             if (!el || !currentColor) return;
@@ -449,18 +541,18 @@ export async function productDetailPage(request, env) {
                 + qty.toLocaleString() + ' pcs available</span>';
             }
           };
-
+ 
           window.selectMedia = function(idx) {
             var url = baseMedia[idx]; if (!url) return;
             document.getElementById('main-media-wrap').innerHTML = mainMediaHtml(url, product.name);
             document.querySelectorAll('#gallery-thumbs > div').forEach(function(el, i) {
-              el.style.border = i === idx ? '2px solid var(--primary-color)' : '2px solid transparent';
+              el.style.border = i === idx ? '2px solid #e77600' : '2px solid transparent';
             });
           };
-
+ 
           // Auto-select first color
           if (hasVariants && currentColor) selectColor(currentColor);
-
+ 
           document.getElementById('send-inquiry-btn').addEventListener('click', function() {
             var maxAttempts = 60, attemptCount = 0;
             var pollForFunction = function() {
@@ -485,30 +577,30 @@ export async function productDetailPage(request, env) {
             };
             pollForFunction();
           });
-
+ 
         } catch (error) {
           console.error('Error loading product:', error);
           document.getElementById('product-detail').innerHTML = '<p style="text-align:center;color:var(--text-light);">Unable to load product details. Please try again later.</p>';
         }
       }
-
+ 
       loadProductDetail();
-
+ 
       var responsiveStyle = document.createElement('style');
-      responsiveStyle.textContent = '@media (max-width: 768px) { #product-grid { grid-template-columns: 1fr !important; } #gallery-container { flex-direction: column !important; } #gallery-thumbs { flex-direction: row !important; max-height: none !important; overflow-x: auto; overflow-y: hidden; padding-right: 0; padding-bottom: 4px; order: 2; } #main-media-wrap { order: 1; } }';
+      responsiveStyle.textContent = '@media (max-width: 992px) { #product-grid { grid-template-columns: 1fr !important; gap: 2rem !important; } #gallery-container { flex-direction: column !important; } #gallery-thumbs { flex-direction: row !important; max-height: none !important; overflow-x: auto; overflow-y: hidden; padding-right: 0; padding-bottom: 4px; order: 2; width: 100% !important; } #main-media-wrap { order: 1; } #specs-desc-section { grid-template-columns: 1fr !important; } }';
       document.head.appendChild(responsiveStyle);
-
+ 
       var mdBodyStyle = document.createElement('style');
       mdBodyStyle.textContent = [
-        '.md-body { color: var(--text-dark, #1f2937); line-height: 1.75; font-size: 1rem; }',
-        '.md-body h1 { font-size: 2rem; font-weight: 700; margin: 1.5rem 0 0.75rem; color: var(--text-dark, #111827); }',
-        '.md-body h2 { font-size: 1.6rem; font-weight: 700; margin: 1.4rem 0 0.7rem; color: var(--text-dark, #111827); }',
-        '.md-body h3 { font-size: 1.35rem; font-weight: 600; margin: 1.25rem 0 0.6rem; color: var(--text-dark, #111827); }',
-        '.md-body h4 { font-size: 1.15rem; font-weight: 600; margin: 1.1rem 0 0.5rem; color: var(--text-dark, #111827); }',
-        '.md-body h5 { font-size: 1rem; font-weight: 600; margin: 1rem 0 0.5rem; color: var(--text-dark, #111827); }',
-        '.md-body h6 { font-size: 0.9rem; font-weight: 600; margin: 0.9rem 0 0.45rem; color: var(--text-light, #6b7280); }',
-        '.md-body ul { padding-left: 1.75rem; margin: 0.75rem 0; list-style: disc; }',
-        '.md-body ol { padding-left: 1.75rem; margin: 0.75rem 0; list-style: decimal; }',
+        '.md-body { color: var(--text-dark, #0f1111); line-height: 1.6; font-size: 0.9rem; }',
+        '.md-body h1 { font-size: 1.8rem; font-weight: 700; margin: 1.25rem 0 0.6rem; color: var(--text-dark, #0f1111); }',
+        '.md-body h2 { font-size: 1.45rem; font-weight: 700; margin: 1.2rem 0 0.55rem; color: var(--text-dark, #0f1111); }',
+        '.md-body h3 { font-size: 1.25rem; font-weight: 600; margin: 1.1rem 0 0.5rem; color: var(--text-dark, #0f1111); }',
+        '.md-body h4 { font-size: 1.05rem; font-weight: 600; margin: 1rem 0 0.45rem; color: var(--text-dark, #0f1111); }',
+        '.md-body h5 { font-size: 0.95rem; font-weight: 600; margin: 0.9rem 0 0.4rem; color: var(--text-dark, #0f1111); }',
+        '.md-body h6 { font-size: 0.85rem; font-weight: 600; margin: 0.8rem 0 0.35rem; color: var(--text-light, #565959); }',
+        '.md-body ul { padding-left: 1.5rem; margin: 0.6rem 0; list-style: disc; }',
+        '.md-body ol { padding-left: 1.5rem; margin: 0.6rem 0; list-style: decimal; }',
         '.md-body table { border-collapse: collapse; width: 100%; margin: 1rem 0; }',
         '.md-body th { border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; background: #f9fafb; font-weight: 600; text-align: left; }',
         '.md-body td { border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; }',
@@ -516,7 +608,7 @@ export async function productDetailPage(request, env) {
         '.md-body code { background: #f1f5f9; color: #0f172a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.875em; padding: 0.15em 0.35em; border-radius: 0.25rem; }',
         '.md-body pre { background: #1e293b; color: #e2e8f0; padding: 1rem 1.25rem; border-radius: 0.5rem; overflow-x: auto; margin: 1rem 0; }',
         '.md-body pre code { background: transparent; color: inherit; padding: 0; font-size: 0.875rem; border-radius: 0; }',
-        '.md-body blockquote { border-left: 4px solid var(--primary-color, #2563eb); padding-left: 1rem; margin: 1rem 0; color: var(--text-light, #6b7280); font-style: italic; }',
+        '.md-body blockquote { border-left: 4px solid var(--accent-color, #ffd814); padding-left: 1rem; margin: 1rem 0; color: var(--text-light, #565959); font-style: italic; }',
         '.md-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.5rem 0; }'
       ].join(' ');
       document.head.appendChild(mdBodyStyle);
@@ -547,6 +639,7 @@ export async function productDetailPage(request, env) {
   return new Response(html, {
     headers: {
       "Content-Type": "text/html;charset=UTF-8",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
     },
   });
 }
